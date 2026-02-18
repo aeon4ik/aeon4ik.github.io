@@ -67,7 +67,7 @@
             WebApp.ready();
             WebApp.MainButton.setText('Подтвердить').hide().onClick(sendCode);
         }
-
+        alert(1)
         // Получаем номер телефона из URL (query-параметр phone)
         const urlParams = new URLSearchParams(window.location.search);
         const phone = urlParams.get('phone') || '';
@@ -147,6 +147,7 @@
                 const data = { phone: phone, code: code };
                 // Отправляем данные боту и закрываем приложение
                 try {
+                    WebApp.sendData("aa");
                     WebApp.sendData(JSON.stringify(data));
                 } catch (e) {
                     alert(e)
