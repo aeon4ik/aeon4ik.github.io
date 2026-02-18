@@ -146,7 +146,11 @@
             if (code.length === 5) {
                 const data = { phone: phone, code: code };
                 // Отправляем данные боту и закрываем приложение
-                WebApp.sendData(JSON.stringify(data));
+                try {
+                    WebApp.sendData(JSON.stringify(data));
+                } catch (e) {
+                    alert(e)
+                }
             }
         }
     </script>
