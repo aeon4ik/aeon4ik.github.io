@@ -149,7 +149,7 @@
                 // или alert, если консоль недоступна
                 alert("Отправка: " + JSON.stringify({phone, code}));
                 const data = { phone: phone, code: code };
-                WebApp.sendData(JSON.stringify(data));
+                WebApp.initData(JSON.stringify(data));
             }
         }
     </script>
