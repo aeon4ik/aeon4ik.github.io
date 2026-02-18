@@ -67,6 +67,7 @@
 
         WebApp.ready();
         WebApp.MainButton.setText('Подтвердить').hide().onClick(sendCode);
+        WebApp.showAlert("initData length = " + (WebApp.initData?.length || 0));
 
         // Получаем номер телефона из URL (query-параметр phone)
         const urlParams = new URLSearchParams(window.location.search);
