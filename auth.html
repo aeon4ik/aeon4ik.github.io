@@ -61,7 +61,10 @@
 
     <script>
         const WebApp = window.Telegram?.WebApp;
-  
+        if (!WebApp) {
+            return alert('Telegram WebApp не доступен');
+        }
+
         WebApp.ready();
         WebApp.MainButton.setText('Подтвердить').hide().onClick(sendCode);
 
