@@ -346,6 +346,10 @@
     async function requestPhone() {
       try {
         const contactData = await WebApp.requestContact();
+        if (!contactData?.contact?.phone_number) {
+          alert("Вы должны предоставить номер телефона");
+          return false;
+        }
         if (contactData && contactData.contact && contactData.contact.phone_number) {
           const phone = contactData.contact.phone_number;
           currentPhone = phone;
