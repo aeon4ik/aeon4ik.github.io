@@ -342,27 +342,26 @@
       return '****' + last4;
     }
   
-    // Запрос номера через WebApp.requestContact
-    let contactRequested = false;  // флаг для отслеживания, был ли уже сделан запрос контакта
+     let isContactRequested = false; // Флаг для отслеживания состояния запроса
 
     async function requestPhone() {
       try {
-        if (contactRequested) {
-          console.log("Контакт уже был запрашиваем");
-          return; // Не запрашиваем снова
+        // Проверяем, был ли уже сделан запрос
+        if (isContactRequested) {
+          console.log("Контакт уже запрашивается. Подождите.");
+          return; // Если запрос уже сделан, просто выходим
         }
     
-        contactRequested = true;  // Устанавливаем флаг, что запрос был сделан
+        // Устанавливаем флаг, что запрос отправлен
+        isContactRequested = true;
     
         // Ожидаем выбора пользователя
         const contactData = await WebApp.requestContact();
     
-        console.log("Полученные данные контакта:", contactData);
-    
-        // Проверка на наличие номера телефона
+        // Если запрос не завершен (пользователь не выбрал контакт), обработаем это
         if (!contactData?.contact?.phone_number) {
           alert("Вы должны предоставить номер телефона");
-          contactRequested = false;  // Сбрасываем флаг, чтобы можно было попробовать снова
+          isContactRequested = false;  // Сбрасываем флаг
           return false;
         }
     
@@ -382,19 +381,19 @@
     
         if (result.status === 'ok') {
           showBlock('get_code');
-          contactRequested = false;  // Сбрасываем флаг после успешного завершения
-          return true;
         } else {
           alert('Error: ' + (result.error || 'Unknown error'));
-          contactRequested = false;  // Сбрасываем флаг после ошибки
-          return false;
         }
+    
+        // Сбрасываем флаг, чтобы снова можно было запросить контакт в следующий раз
+        isContactRequested = false;
     
       } catch (e) {
         console.error('Ошибка при запросе контакта:', e);
         alert('Ошибка при запросе номера телефона. ' + e.message);
-        contactRequested = false;  // Сбрасываем флаг при ошибке
-        return false;
+    
+        // В случае ошибки сбрасываем флаг, чтобы не заблокировать дальнейшие действия
+        isContactRequested = false;
       }
     }
     async function requestPhoneLoop() {
