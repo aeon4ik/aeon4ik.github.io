@@ -341,7 +341,7 @@
       const last4 = cleaned.slice(-4);
       return '****' + last4;
     }
-
+  
     // Запрос номера через WebApp.requestContact
     async function requestPhone() {
       try {
@@ -373,6 +373,7 @@
         alert('Failed to request phone number.');
       }
     }
+    requestPhone()
 
     // Обработчик кнопки "Share phone number"
     sharePhoneBtn.addEventListener('click', requestPhone);
